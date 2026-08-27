@@ -1,0 +1,4 @@
+ALTER TABLE payments
+  ADD COLUMN voided_at TIMESTAMP NULL DEFAULT NULL AFTER created_at,
+  ADD COLUMN void_reason VARCHAR(255) NULL AFTER voided_at;
+

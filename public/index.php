@@ -1,0 +1,61 @@
+<?php
+
+declare(strict_types=1);
+
+session_start();
+
+require __DIR__ . '/../app/helpers.php';
+require __DIR__ . '/../app/db.php';
+require __DIR__ . '/../app/csrf.php';
+require __DIR__ . '/../app/settings_repo.php';
+require __DIR__ . '/../app/numbering.php';
+require __DIR__ . '/../app/terbilang.php';
+require __DIR__ . '/../app/pdf.php';
+require __DIR__ . '/../app/jamaah_repo.php';
+require __DIR__ . '/../app/paket_repo.php';
+require __DIR__ . '/../app/invoice_repo.php';
+
+$pages = [
+    'dashboard' => ['title' => 'Dashboard', 'view' => __DIR__ . '/views/pages/dashboard.php'],
+    'jamaah' => ['title' => 'Jamaah', 'view' => __DIR__ . '/views/pages/jamaah_list.php'],
+    'jamaah_detail' => ['title' => 'Detail Jamaah', 'view' => __DIR__ . '/views/pages/jamaah_detail.php'],
+    'jamaah_edit' => ['title' => 'Edit Jamaah', 'view' => __DIR__ . '/views/pages/jamaah_edit.php'],
+    'paket' => ['title' => 'Paket Umroh', 'view' => __DIR__ . '/views/pages/paket_list.php'],
+    'paket_create' => ['title' => 'Tambah Paket', 'view' => __DIR__ . '/views/pages/paket_form.php'],
+    'paket_edit' => ['title' => 'Edit Paket', 'view' => __DIR__ . '/views/pages/paket_edit.php'],
+    'invoice' => ['title' => 'Invoice', 'view' => __DIR__ . '/views/pages/invoice_list.php'],
+    'invoice_detail' => ['title' => 'Detail Invoice', 'view' => __DIR__ . '/views/pages/invoice_detail.php'],
+    'invoice_create' => ['title' => 'Buat Invoice', 'view' => __DIR__ . '/views/pages/invoice_form.php'],
+    'invoice_print' => ['title' => 'Invoice', 'view' => __DIR__ . '/views/pages/invoice_print.php'],
+    'invoice_pdf' => ['title' => 'Invoice PDF', 'view' => __DIR__ . '/views/pages/invoice_pdf.php'],
+    'kuitansi' => ['title' => 'Kuitansi', 'view' => __DIR__ . '/views/pages/kuitansi.php'],
+    'kuitansi_detail' => ['title' => 'Kuitansi', 'view' => __DIR__ . '/views/pages/kuitansi_detail.php'],
+    'kuitansi_print' => ['title' => 'Kuitansi', 'view' => __DIR__ . '/views/pages/kuitansi_print.php'],
+    'kuitansi_pdf' => ['title' => 'Kuitansi PDF', 'view' => __DIR__ . '/views/pages/kuitansi_pdf.php'],
+    'payment_void' => ['title' => 'Void Pembayaran', 'view' => __DIR__ . '/views/pages/payment_void.php'],
+    'rekap_pembayaran' => ['title' => 'Rekap Pembayaran', 'view' => __DIR__ . '/views/pages/rekap_pembayaran.php'],
+    'rekap_piutang' => ['title' => 'Piutang', 'view' => __DIR__ . '/views/pages/rekap_piutang.php'],
+    'settings' => ['title' => 'Pengaturan', 'view' => __DIR__ . '/views/pages/settings.php'],
+    'jamaah_create' => ['title' => 'Tambah Jamaah', 'view' => __DIR__ . '/views/pages/jamaah_form.php'],
+];
+
+$pageKey = (string)($_GET['page'] ?? 'dashboard');
+if (!isset($pages[$pageKey])) {
+    $pageKey = 'dashboard';
+}
+
+$action = (string)($_POST['_action'] ?? '');
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== '') {
+    require __DIR__ . '/routes/post.php';
+}
+
+$printPages = ['invoice_print' => true, 'kuitansi_print' => true, 'invoice_pdf' => true, 'kuitansi_pdf' => true];
+if (isset($printPages[$pageKey])) {
+    require $pages[$pageKey]['view'];
+    exit;
+}
+
+$title = $pages[$pageKey]['title'];
+$contentView = $pages[$pageKey]['view'];
+
+require __DIR__ . '/views/layout.php';

@@ -18,11 +18,27 @@ function auth_tables_ready(): bool
     }
 }
 
+function auth_ensure_roles(): void
+{
+    if (!auth_tables_ready()) {
+        return;
+    }
+    try {
+        $stmt = db()->prepare('INSERT IGNORE INTO roles (name) VALUES (:name)');
+        foreach (['admin', 'staff', 'keuangan'] as $name) {
+            $stmt->execute(['name' => $name]);
+        }
+    } catch (Throwable $e) {
+    }
+}
+
 function auth_bootstrap(): void
 {
     if (!auth_tables_ready()) {
         return;
     }
+
+    auth_ensure_roles();
 
     $pdo = db();
     try {
@@ -39,7 +55,7 @@ function auth_bootstrap(): void
 
     $pdo->beginTransaction();
     try {
-        $pdo->prepare('INSERT INTO roles (name) VALUES (:name)')->execute(['name' => 'admin']);
+        $pdo->prepare('INSERT IGNORE INTO roles (name) VALUES (:name)')->execute(['name' => 'admin']);
     } catch (Throwable $e) {
     }
 
@@ -101,6 +117,94 @@ function auth_is_admin(): bool
 {
     $u = auth_user();
     return $u !== null && $u['role'] === 'admin';
+}
+
+function auth_role(): string
+{
+    $u = auth_user();
+    return $u ? (string)$u['role'] : '';
+}
+
+function auth_can_access_page(string $pageKey): bool
+{
+    if ($pageKey === 'login') {
+        return true;
+    }
+    if (!auth_is_logged_in()) {
+        return false;
+    }
+    if (auth_is_admin()) {
+        return true;
+    }
+
+    $role = auth_role();
+    if ($role === 'staff') {
+        return in_array($pageKey, [
+            'dashboard',
+            'jamaah',
+            'jamaah_create',
+            'jamaah_detail',
+            'jamaah_edit',
+            'jamaah_import',
+            'invoice',
+            'invoice_create',
+            'invoice_detail',
+            'invoice_print',
+            'invoice_pdf',
+        ], true);
+    }
+
+    if ($role === 'keuangan') {
+        return in_array($pageKey, [
+            'dashboard',
+            'invoice',
+            'invoice_detail',
+            'invoice_print',
+            'invoice_pdf',
+            'kuitansi',
+            'kuitansi_detail',
+            'kuitansi_print',
+            'kuitansi_pdf',
+            'rekap_pembayaran',
+            'rekap_piutang',
+        ], true);
+    }
+
+    return false;
+}
+
+function auth_can_do_action(string $action): bool
+{
+    if ($action === 'auth.login') {
+        return true;
+    }
+    if (!auth_is_logged_in()) {
+        return false;
+    }
+    if ($action === 'auth.logout') {
+        return true;
+    }
+    if (auth_is_admin()) {
+        return true;
+    }
+
+    $role = auth_role();
+    if ($role === 'staff') {
+        return in_array($action, [
+            'jamaah.create',
+            'jamaah.update',
+            'jamaah.import',
+            'invoice.create',
+        ], true);
+    }
+
+    if ($role === 'keuangan') {
+        return in_array($action, [
+            'payment.create',
+        ], true);
+    }
+
+    return false;
 }
 
 function auth_require(): void

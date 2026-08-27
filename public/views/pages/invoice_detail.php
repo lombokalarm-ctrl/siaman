@@ -5,6 +5,8 @@
       $id = (int)($_GET['id'] ?? 0);
       $invoice = null;
       $voidSupported = false;
+      $canVoid = false;
+      $canPaymentCreate = auth_can_do_action('payment.create');
       if ($id > 0) {
           try {
               $invoice = invoice_find($id);
@@ -13,12 +15,18 @@
           }
       }
       $voidSupported = payments_void_supported();
+      $canVoid = $voidSupported && auth_can_access_page('payment_void');
       ?>
       <div>
         <div class="card-title">Invoice <span class="mono"><?= $invoice ? h((string)$invoice['nomor']) : '—' ?></span></div>
         <?php if ($invoice): ?>
           <div class="card-subtitle">
-            Jamaah: <a href="<?= h(app_url('/?page=jamaah_detail&id=' . (int)$invoice['jamaah_id'])) ?>"><?= h((string)$invoice['jamaah_nama']) ?></a>
+            Jamaah:
+            <?php if (auth_can_access_page('jamaah_detail')): ?>
+              <a href="<?= h(app_url('/?page=jamaah_detail&id=' . (int)$invoice['jamaah_id'])) ?>"><?= h((string)$invoice['jamaah_nama']) ?></a>
+            <?php else: ?>
+              <?= h((string)$invoice['jamaah_nama']) ?>
+            <?php endif; ?>
             • Paket: <?= $invoice['paket_nama'] ? h((string)$invoice['paket_nama']) : '—' ?>
           </div>
         <?php else: ?>
@@ -114,11 +122,11 @@
             <th>No Kuitansi</th>
             <th>Metode</th>
             <th>Jumlah</th>
-            <?php if ($voidSupported): ?>
+            <?php if ($canVoid): ?>
               <th>Status</th>
             <?php endif; ?>
             <th>Pengirim</th>
-            <?php if ($voidSupported): ?>
+            <?php if ($canVoid): ?>
               <th style="width:120px">Aksi</th>
             <?php endif; ?>
           </tr>
@@ -126,17 +134,23 @@
         <tbody>
           <?php if (!$invoice['payments']): ?>
             <tr>
-              <td colspan="<?= $voidSupported ? 7 : 5 ?>" class="muted">Belum ada pembayaran.</td>
+              <td colspan="<?= $canVoid ? 7 : 5 ?>" class="muted">Belum ada pembayaran.</td>
             </tr>
           <?php endif; ?>
           <?php foreach ($invoice['payments'] as $p): ?>
             <?php $isVoid = $voidSupported && isset($p['voided_at']) && $p['voided_at']; ?>
             <tr>
               <td class="mono"><?= h((string)$p['tanggal']) ?></td>
-              <td><a class="mono" href="<?= h(app_url('/?page=kuitansi_detail&id=' . (int)$p['id'])) ?>"><?= h((string)$p['nomor_kuitansi']) ?></a></td>
+              <td>
+                <?php if (auth_can_access_page('kuitansi_detail')): ?>
+                  <a class="mono" href="<?= h(app_url('/?page=kuitansi_detail&id=' . (int)$p['id'])) ?>"><?= h((string)$p['nomor_kuitansi']) ?></a>
+                <?php else: ?>
+                  <span class="mono"><?= h((string)$p['nomor_kuitansi']) ?></span>
+                <?php endif; ?>
+              </td>
               <td><?= h((string)$p['metode']) ?></td>
               <td class="mono"><?= h(rupiah((string)$p['amount'])) ?></td>
-              <?php if ($voidSupported): ?>
+              <?php if ($canVoid): ?>
                 <td>
                   <?php if ($isVoid): ?>
                     <span class="badge danger">VOID</span>
@@ -152,7 +166,7 @@
                   <div class="sub">Alasan: <?= h((string)$p['void_reason']) ?></div>
                 <?php endif; ?>
               </td>
-              <?php if ($voidSupported): ?>
+              <?php if ($canVoid): ?>
                 <td>
                   <?php if ($isVoid): ?>
                     <span class="muted">—</span>
@@ -179,6 +193,8 @@
 
     <?php if (!$invoice): ?>
       <div class="muted">Pilih invoice terlebih dahulu.</div>
+    <?php elseif (!$canPaymentCreate): ?>
+      <div class="muted">Anda tidak memiliki akses untuk menambah pembayaran.</div>
     <?php else: ?>
       <?php $today = (new DateTimeImmutable('now'))->format('Y-m-d'); ?>
       <form method="post" action="<?= h(app_url('/?page=invoice_detail&id=' . (int)$invoice['id'])) ?>">

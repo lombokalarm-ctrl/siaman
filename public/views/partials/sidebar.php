@@ -7,15 +7,30 @@ $me = auth_user();
 
 $items = [
     ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => app_url('/?page=dashboard')],
-    ['key' => 'jamaah', 'label' => 'Jamaah', 'href' => app_url('/?page=jamaah')],
-    ['key' => 'paket', 'label' => 'Paket', 'href' => app_url('/?page=paket')],
-    ['key' => 'invoice', 'label' => 'Invoice', 'href' => app_url('/?page=invoice')],
-    ['key' => 'rekap_pembayaran', 'label' => 'Rekap Pembayaran', 'href' => app_url('/?page=rekap_pembayaran')],
-    ['key' => 'rekap_piutang', 'label' => 'Piutang', 'href' => app_url('/?page=rekap_piutang')],
-    ['key' => 'settings', 'label' => 'Pengaturan', 'href' => app_url('/?page=settings')],
 ];
 
-if (auth_is_admin()) {
+if (auth_can_access_page('jamaah')) {
+    $items[] = ['key' => 'jamaah', 'label' => 'Jamaah', 'href' => app_url('/?page=jamaah')];
+}
+if (auth_can_access_page('paket')) {
+    $items[] = ['key' => 'paket', 'label' => 'Paket', 'href' => app_url('/?page=paket')];
+}
+if (auth_can_access_page('invoice')) {
+    $items[] = ['key' => 'invoice', 'label' => 'Invoice', 'href' => app_url('/?page=invoice')];
+}
+if (auth_can_access_page('kuitansi')) {
+    $items[] = ['key' => 'kuitansi', 'label' => 'Kuitansi', 'href' => app_url('/?page=kuitansi')];
+}
+if (auth_can_access_page('rekap_pembayaran')) {
+    $items[] = ['key' => 'rekap_pembayaran', 'label' => 'Rekap Pembayaran', 'href' => app_url('/?page=rekap_pembayaran')];
+}
+if (auth_can_access_page('rekap_piutang')) {
+    $items[] = ['key' => 'rekap_piutang', 'label' => 'Piutang', 'href' => app_url('/?page=rekap_piutang')];
+}
+if (auth_can_access_page('settings')) {
+    $items[] = ['key' => 'settings', 'label' => 'Pengaturan', 'href' => app_url('/?page=settings')];
+}
+if (auth_can_access_page('users')) {
     $items[] = ['key' => 'users', 'label' => 'Users', 'href' => app_url('/?page=users')];
 }
 

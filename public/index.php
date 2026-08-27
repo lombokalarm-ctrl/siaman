@@ -58,6 +58,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== '') {
     if ($action !== 'auth.login') {
         auth_require();
     }
+    if (!auth_can_do_action($action)) {
+        http_response_code(403);
+        echo 'Forbidden';
+        exit;
+    }
     require __DIR__ . '/routes/post.php';
 }
 
@@ -65,6 +70,11 @@ $isLoginPage = ($pageKey === 'login');
 auth_bootstrap();
 if (!$isLoginPage) {
     auth_require();
+}
+if (!auth_can_access_page($pageKey)) {
+    http_response_code(403);
+    echo 'Forbidden';
+    exit;
 }
 
 $printPages = ['invoice_print' => true, 'kuitansi_print' => true, 'invoice_pdf' => true, 'kuitansi_pdf' => true];
@@ -74,6 +84,9 @@ if (isset($printPages[$pageKey])) {
 }
 
 if ($isLoginPage) {
+    if (auth_is_logged_in()) {
+        redirect(app_url('/?page=dashboard'));
+    }
     require $pages[$pageKey]['view'];
     exit;
 }

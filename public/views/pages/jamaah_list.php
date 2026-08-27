@@ -2,7 +2,7 @@
   <div class="toolbar">
     <div class="toolbar-left">
       <a class="btn primary" href="<?= h(app_url('/?page=jamaah_create')) ?>">Tambah Jamaah</a>
-      <button class="btn">Import (nanti)</button>
+      <a class="btn" href="<?= h(app_url('/?page=jamaah_import')) ?>">Import CSV</a>
     </div>
     <div class="toolbar-right">
       <form method="get" action="<?= h(app_url('/')) ?>" style="display:flex;gap:8px;align-items:center">

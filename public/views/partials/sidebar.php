@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 $page = (string)($_GET['page'] ?? 'dashboard');
+$me = auth_user();
 
 $items = [
     ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => app_url('/?page=dashboard')],
@@ -13,6 +14,10 @@ $items = [
     ['key' => 'rekap_piutang', 'label' => 'Piutang', 'href' => app_url('/?page=rekap_piutang')],
     ['key' => 'settings', 'label' => 'Pengaturan', 'href' => app_url('/?page=settings')],
 ];
+
+if (auth_is_admin()) {
+    $items[] = ['key' => 'users', 'label' => 'Users', 'href' => app_url('/?page=users')];
+}
 
 ?>
 <aside class="sidebar" data-shell="sidebar">
@@ -38,7 +43,14 @@ $items = [
   </nav>
 
   <div class="sidebar-footer">
-    <div class="chip">Prototype UI</div>
-    <div class="muted">Tahap awal (tanpa backend)</div>
+    <?php if ($me): ?>
+      <div class="chip"><?= h((string)$me['username']) ?></div>
+      <div class="muted">Role: <?= h((string)$me['role']) ?></div>
+      <form method="post" action="<?= h(app_url('/?page=dashboard')) ?>" style="margin-top:8px">
+        <?= csrf_input() ?>
+        <input type="hidden" name="_action" value="auth.logout" />
+        <button class="btn" type="submit" style="width:100%">Logout</button>
+      </form>
+    <?php endif; ?>
   </div>
 </aside>

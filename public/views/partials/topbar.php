@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+$me = auth_user();
+
 ?>
 <header class="topbar">
   <div class="topbar-left">
@@ -14,13 +16,14 @@ declare(strict_types=1);
     <div class="search">
       <input class="input" type="search" placeholder="Cari jamaah, invoice, paket…" aria-label="Cari" />
     </div>
-    <div class="user">
-      <div class="avatar" aria-hidden="true">A</div>
-      <div class="user-meta">
-        <div class="user-name">Admin</div>
-        <div class="user-role">Internal</div>
+    <?php if ($me): ?>
+      <div class="user">
+        <div class="avatar" aria-hidden="true"><?= h(strtoupper(substr((string)$me['username'], 0, 1))) ?></div>
+        <div class="user-meta">
+          <div class="user-name"><?= h((string)$me['username']) ?></div>
+          <div class="user-role"><?= h((string)$me['role']) ?></div>
+        </div>
       </div>
-    </div>
+    <?php endif; ?>
   </div>
 </header>
-

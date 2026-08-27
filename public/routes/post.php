@@ -4,6 +4,39 @@ declare(strict_types=1);
 
 $action = (string)($_POST['_action'] ?? '');
 
+if ($action === 'auth.login') {
+    csrf_verify_or_abort();
+
+    $username = (string)($_POST['username'] ?? '');
+    $password = (string)($_POST['password'] ?? '');
+    $next = (string)($_POST['next'] ?? '');
+    $next = trim($next);
+    if ($next === '') {
+        $next = app_url('/?page=dashboard');
+    }
+
+    if (!auth_login_attempt($username, $password)) {
+        flash_set('error', 'Username atau password salah.');
+        redirect(app_url('/?page=login'));
+    }
+
+    $u = auth_user();
+    if ($u && (int)$u['must_change_password'] === 1) {
+        flash_set('success', 'Berhasil login. Silakan ganti password.');
+        redirect(app_url('/?page=user_edit&id=' . (int)$u['id']));
+    }
+
+    redirect($next);
+}
+
+if ($action === 'auth.logout') {
+    csrf_verify_or_abort();
+    auth_require();
+    auth_logout();
+    flash_set('success', 'Anda telah logout.');
+    redirect(app_url('/?page=login'));
+}
+
 if ($action === 'settings.pendaftaran.update') {
     csrf_verify_or_abort();
 
@@ -282,6 +315,271 @@ if ($action === 'jamaah.update') {
 
     flash_set('success', 'Data jamaah berhasil diupdate.');
     redirect(app_url('/?page=jamaah_detail&id=' . $id));
+}
+
+if ($action === 'jamaah.import') {
+    csrf_verify_or_abort();
+
+    if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
+        flash_set('error', 'File tidak ditemukan.');
+        redirect(app_url('/?page=jamaah_import'));
+    }
+
+    $f = $_FILES['file'];
+    if (($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        flash_set('error', 'Gagal upload file.');
+        redirect(app_url('/?page=jamaah_import'));
+    }
+
+    $tmp = (string)($f['tmp_name'] ?? '');
+    if ($tmp === '' || !is_file($tmp)) {
+        flash_set('error', 'File upload tidak valid.');
+        redirect(app_url('/?page=jamaah_import'));
+    }
+
+    $fh = fopen($tmp, 'rb');
+    if ($fh === false) {
+        flash_set('error', 'Tidak bisa membaca file.');
+        redirect(app_url('/?page=jamaah_import'));
+    }
+
+    $delimiter = ';';
+    $header = fgetcsv($fh, 0, $delimiter);
+    if (!is_array($header) || !$header) {
+        fclose($fh);
+        flash_set('error', 'CSV kosong atau header tidak valid.');
+        redirect(app_url('/?page=jamaah_import'));
+    }
+
+    if (isset($header[0])) {
+        $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string)$header[0]);
+    }
+
+    $headerNorm = [];
+    foreach ($header as $h) {
+        $h = strtolower(trim((string)$h));
+        $headerNorm[] = $h;
+    }
+
+    $required = [
+        'nama_lengkap',
+        'nama_bapak_kandung',
+        'nik',
+        'nomor_kk',
+        'tempat_lahir',
+        'tanggal_lahir',
+        'jenis_kelamin',
+        'status_pernikahan',
+        'pendidikan',
+        'pekerjaan',
+        'alamat_lengkap',
+        'hp',
+        'email',
+        'status',
+    ];
+
+    foreach ($required as $req) {
+        if (!in_array($req, $headerNorm, true)) {
+            fclose($fh);
+            flash_set('error', 'Header CSV tidak sesuai template. Kolom wajib: ' . $req);
+            redirect(app_url('/?page=jamaah_import'));
+        }
+    }
+
+    $idx = [];
+    foreach ($headerNorm as $i => $h) {
+        $idx[$h] = $i;
+    }
+
+    $pdo = db();
+    $inserted = 0;
+    $skipped = 0;
+    $failed = 0;
+
+    $pdo->beginTransaction();
+    try {
+        $stmtExists = $pdo->prepare('SELECT id FROM jamaah WHERE nik = :nik LIMIT 1');
+        $stmtInsert = $pdo->prepare('
+            INSERT INTO jamaah (
+                id_jamaah, nomor_pendaftaran,
+                nama_lengkap, nama_bapak_kandung, nik, nomor_kk, tempat_lahir, tanggal_lahir,
+                jenis_kelamin, status_pernikahan, pendidikan, pekerjaan, alamat_lengkap, hp, email, status
+            ) VALUES (
+                :id_jamaah, :nomor_pendaftaran,
+                :nama_lengkap, :nama_bapak_kandung, :nik, :nomor_kk, :tempat_lahir, :tanggal_lahir,
+                :jenis_kelamin, :status_pernikahan, :pendidikan, :pekerjaan, :alamat_lengkap, :hp, :email, :status
+            )
+        ');
+
+        while (($row = fgetcsv($fh, 0, $delimiter)) !== false) {
+            if (!is_array($row)) {
+                $failed++;
+                continue;
+            }
+
+            $namaLengkap = trim((string)($row[$idx['nama_lengkap']] ?? ''));
+            $namaBapak = trim((string)($row[$idx['nama_bapak_kandung']] ?? ''));
+            $nik = preg_replace('/\s+/', '', (string)($row[$idx['nik']] ?? ''));
+            $nomorKk = preg_replace('/\s+/', '', (string)($row[$idx['nomor_kk']] ?? ''));
+            $tempatLahir = trim((string)($row[$idx['tempat_lahir']] ?? ''));
+            $tanggalLahir = trim((string)($row[$idx['tanggal_lahir']] ?? ''));
+            $jenisKelamin = trim((string)($row[$idx['jenis_kelamin']] ?? ''));
+            $statusPernikahan = trim((string)($row[$idx['status_pernikahan']] ?? ''));
+            $pendidikan = trim((string)($row[$idx['pendidikan']] ?? ''));
+            $pekerjaan = trim((string)($row[$idx['pekerjaan']] ?? ''));
+            $alamatLengkap = trim((string)($row[$idx['alamat_lengkap']] ?? ''));
+            $hp = trim((string)($row[$idx['hp']] ?? ''));
+            $email = trim((string)($row[$idx['email']] ?? ''));
+            $status = trim((string)($row[$idx['status']] ?? 'aktif'));
+
+            $errors = [];
+            if ($namaLengkap === '') $errors[] = 'nama_lengkap';
+            if ($namaBapak === '') $errors[] = 'nama_bapak_kandung';
+            if ($nik === '') $errors[] = 'nik';
+            if ($nomorKk === '') $errors[] = 'nomor_kk';
+            if ($tempatLahir === '') $errors[] = 'tempat_lahir';
+            if ($tanggalLahir === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalLahir)) $errors[] = 'tanggal_lahir';
+            if ($jenisKelamin === '') $errors[] = 'jenis_kelamin';
+            if ($statusPernikahan === '') $errors[] = 'status_pernikahan';
+            if ($pendidikan === '') $errors[] = 'pendidikan';
+            if ($pekerjaan === '') $errors[] = 'pekerjaan';
+            if ($alamatLengkap === '') $errors[] = 'alamat_lengkap';
+            if ($hp === '') $errors[] = 'hp';
+            if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'email';
+            if (!in_array($status, ['aktif', 'nonaktif'], true)) $errors[] = 'status';
+
+            if ($errors) {
+                $failed++;
+                continue;
+            }
+
+            $stmtExists->execute(['nik' => $nik]);
+            $exists = $stmtExists->fetch();
+            if ($exists) {
+                $skipped++;
+                continue;
+            }
+
+            $now = new DateTimeImmutable('now');
+            $idJamaah = generate_id_jamaah();
+            $nomorPendaftaran = generate_nomor_pendaftaran($now);
+
+            try {
+                $stmtInsert->execute([
+                    'id_jamaah' => $idJamaah,
+                    'nomor_pendaftaran' => $nomorPendaftaran,
+                    'nama_lengkap' => $namaLengkap,
+                    'nama_bapak_kandung' => $namaBapak,
+                    'nik' => $nik,
+                    'nomor_kk' => $nomorKk,
+                    'tempat_lahir' => $tempatLahir,
+                    'tanggal_lahir' => $tanggalLahir,
+                    'jenis_kelamin' => $jenisKelamin,
+                    'status_pernikahan' => $statusPernikahan,
+                    'pendidikan' => $pendidikan,
+                    'pekerjaan' => $pekerjaan,
+                    'alamat_lengkap' => $alamatLengkap,
+                    'hp' => $hp,
+                    'email' => $email !== '' ? $email : null,
+                    'status' => $status !== '' ? $status : 'aktif',
+                ]);
+                $inserted++;
+            } catch (Throwable $e) {
+                $failed++;
+                continue;
+            }
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        fclose($fh);
+        flash_set('error', 'Import gagal. ' . $e->getMessage());
+        redirect(app_url('/?page=jamaah_import'));
+    }
+
+    fclose($fh);
+    flash_set('success', "Import selesai. Berhasil: {$inserted}, Skip (duplikat NIK): {$skipped}, Gagal: {$failed}.");
+    redirect(app_url('/?page=jamaah'));
+}
+
+if ($action === 'role.create') {
+    csrf_verify_or_abort();
+    auth_require_admin();
+
+    $name = (string)($_POST['name'] ?? '');
+    try {
+        role_create($name);
+        flash_set('success', 'Role berhasil ditambahkan.');
+    } catch (Throwable $e) {
+        flash_set('error', 'Gagal menambah role. Pastikan nama unik.');
+    }
+    redirect(app_url('/?page=users'));
+}
+
+if ($action === 'user.create') {
+    csrf_verify_or_abort();
+    auth_require_admin();
+
+    $username = (string)($_POST['username'] ?? '');
+    $roleId = (int)($_POST['role_id'] ?? 0);
+    $password = (string)($_POST['password'] ?? '');
+    $status = (string)($_POST['status'] ?? 'aktif');
+
+    try {
+        user_create([
+            'username' => $username,
+            'password' => $password,
+            'role_id' => $roleId,
+            'status' => $status,
+        ]);
+        flash_set('success', 'User berhasil ditambahkan.');
+        redirect(app_url('/?page=users'));
+    } catch (Throwable $e) {
+        flash_set('error', 'Gagal menambah user. Pastikan username unik dan role dipilih.');
+        redirect(app_url('/?page=user_create'));
+    }
+}
+
+if ($action === 'user.update') {
+    csrf_verify_or_abort();
+    auth_require_admin();
+
+    $id = (int)($_POST['id'] ?? 0);
+    $username = (string)($_POST['username'] ?? '');
+    $roleId = (int)($_POST['role_id'] ?? 0);
+    $status = (string)($_POST['status'] ?? 'aktif');
+    $mustChange = (int)($_POST['must_change_password'] ?? 0);
+    $newPassword = (string)($_POST['new_password'] ?? '');
+    $newPasswordConfirm = (string)($_POST['new_password_confirm'] ?? '');
+
+    try {
+        user_update($id, [
+            'username' => $username,
+            'role_id' => $roleId,
+            'status' => $status,
+            'must_change_password' => $mustChange,
+        ]);
+
+        if ($newPassword !== '') {
+            if ($newPassword !== $newPasswordConfirm) {
+                flash_set('error', 'Konfirmasi password tidak sama.');
+                redirect(app_url('/?page=user_edit&id=' . $id));
+            }
+            user_set_password($id, $newPassword);
+        }
+
+        $me = auth_user();
+        if ($me && (int)$me['id'] === $id) {
+            $_SESSION['auth']['must_change_password'] = 0;
+        }
+
+        flash_set('success', 'User berhasil diupdate.');
+        redirect(app_url('/?page=users'));
+    } catch (Throwable $e) {
+        flash_set('error', 'Gagal update user. Pastikan username unik dan role valid.');
+        redirect(app_url('/?page=user_edit&id=' . $id));
+    }
 }
 
 if ($action === 'paket.create') {

@@ -146,6 +146,9 @@ function auth_can_access_page(string $pageKey): bool
             'jamaah_detail',
             'jamaah_edit',
             'jamaah_import',
+            'clients',
+            'client_create',
+            'client_edit',
             'invoice',
             'invoice_create',
             'invoice_detail',
@@ -194,6 +197,8 @@ function auth_can_do_action(string $action): bool
             'jamaah.create',
             'jamaah.update',
             'jamaah.import',
+            'client.create',
+            'client.update',
             'invoice.create',
         ], true);
     }

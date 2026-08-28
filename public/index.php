@@ -13,6 +13,7 @@ require __DIR__ . '/../app/numbering.php';
 require __DIR__ . '/../app/terbilang.php';
 require __DIR__ . '/../app/pdf.php';
 require __DIR__ . '/../app/jamaah_repo.php';
+require __DIR__ . '/../app/client_repo.php';
 require __DIR__ . '/../app/paket_repo.php';
 require __DIR__ . '/../app/invoice_repo.php';
 require __DIR__ . '/../app/role_repo.php';
@@ -23,6 +24,9 @@ $pages = [
     'jamaah' => ['title' => 'Jamaah', 'view' => __DIR__ . '/views/pages/jamaah_list.php'],
     'jamaah_import' => ['title' => 'Import Jamaah', 'view' => __DIR__ . '/views/pages/jamaah_import.php'],
     'login' => ['title' => 'Login', 'view' => __DIR__ . '/views/pages/login.php'],
+    'clients' => ['title' => 'Klien', 'view' => __DIR__ . '/views/pages/client_list.php'],
+    'client_create' => ['title' => 'Tambah Klien', 'view' => __DIR__ . '/views/pages/client_form.php'],
+    'client_edit' => ['title' => 'Edit Klien', 'view' => __DIR__ . '/views/pages/client_edit.php'],
     'users' => ['title' => 'Users', 'view' => __DIR__ . '/views/pages/users.php'],
     'user_create' => ['title' => 'Tambah User', 'view' => __DIR__ . '/views/pages/user_form.php'],
     'user_edit' => ['title' => 'Edit User', 'view' => __DIR__ . '/views/pages/user_edit.php'],

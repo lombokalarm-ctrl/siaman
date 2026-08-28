@@ -40,9 +40,15 @@ $printTime = (new DateTimeImmutable('now'))->format('Y-m-d H:i');
 
     <section class="grid cols-2">
       <div>
-        <div class="label">Jamaah</div>
-        <div style="font-weight:650;margin-top:6px"><?= h((string)$payment['jamaah_nama']) ?></div>
-        <div class="muted mono" style="margin-top:3px"><?= h((string)$payment['jamaah_hp']) ?></div>
+        <div class="label">Pelanggan</div>
+        <?php if ((string)($payment['target_type'] ?? '') === 'client'): ?>
+          <div style="font-weight:650;margin-top:6px"><?= h((string)$payment['client_perusahaan']) ?></div>
+          <div class="muted" style="margin-top:3px">PIC: <span class="mono"><?= h((string)$payment['client_pic']) ?></span></div>
+          <div class="muted mono" style="margin-top:3px"><?= h((string)$payment['client_tlp']) ?><?= $payment['client_email'] ? ' • ' . h((string)$payment['client_email']) : '' ?></div>
+        <?php else: ?>
+          <div style="font-weight:650;margin-top:6px"><?= h((string)$payment['jamaah_nama']) ?></div>
+          <div class="muted mono" style="margin-top:3px"><?= h((string)$payment['jamaah_hp']) ?></div>
+        <?php endif; ?>
       </div>
       <div>
         <div class="label">Invoice</div>

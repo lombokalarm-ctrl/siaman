@@ -101,9 +101,16 @@ $titleDoc = $invoice ? ('Invoice ' . (string)$invoice['nomor']) : 'Invoice';
           <section class="invoice-bill">
             <div class="invoice-bill-card">
               <div class="label">Ditagihkan Kepada</div>
-              <div class="invoice-strong" style="margin-top:6px"><?= h((string)$invoice['jamaah_nama']) ?></div>
-              <div class="muted mono" style="margin-top:2px"><?= h((string)$invoice['jamaah_kode']) ?> • <?= h((string)$invoice['jamaah_daftar']) ?></div>
-              <div class="muted mono" style="margin-top:2px"><?= h((string)$invoice['jamaah_hp']) ?></div>
+              <?php if ((string)($invoice['target_type'] ?? '') === 'client'): ?>
+                <div class="invoice-strong" style="margin-top:6px"><?= h((string)$invoice['client_perusahaan']) ?></div>
+                <div class="muted" style="margin-top:2px">PIC: <span class="mono"><?= h((string)$invoice['client_pic']) ?></span></div>
+                <div class="muted mono" style="margin-top:2px"><?= h((string)$invoice['client_tlp']) ?><?= $invoice['client_email'] ? ' • ' . h((string)$invoice['client_email']) : '' ?></div>
+                <div class="muted" style="margin-top:2px"><?= h((string)$invoice['client_alamat']) ?></div>
+              <?php else: ?>
+                <div class="invoice-strong" style="margin-top:6px"><?= h((string)$invoice['jamaah_nama']) ?></div>
+                <div class="muted mono" style="margin-top:2px"><?= h((string)$invoice['jamaah_kode']) ?> • <?= h((string)$invoice['jamaah_daftar']) ?></div>
+                <div class="muted mono" style="margin-top:2px"><?= h((string)$invoice['jamaah_hp']) ?></div>
+              <?php endif; ?>
             </div>
             <div class="invoice-bill-card">
               <div class="label">Paket</div>

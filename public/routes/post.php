@@ -503,6 +503,94 @@ if ($action === 'jamaah.import') {
     redirect(app_url('/?page=jamaah'));
 }
 
+if ($action === 'client.create') {
+    csrf_verify_or_abort();
+
+    $namaPerusahaan = trim((string)($_POST['nama_perusahaan'] ?? ''));
+    $namaPic = trim((string)($_POST['nama_pic'] ?? ''));
+    $alamat = trim((string)($_POST['alamat'] ?? ''));
+    $noTlp = trim((string)($_POST['no_tlp'] ?? ''));
+    $email = trim((string)($_POST['email'] ?? ''));
+    $status = trim((string)($_POST['status'] ?? 'aktif'));
+
+    $errors = [];
+    if ($namaPerusahaan === '') $errors[] = 'Nama perusahaan wajib diisi.';
+    if ($namaPic === '') $errors[] = 'Nama PIC wajib diisi.';
+    if ($alamat === '') $errors[] = 'Alamat wajib diisi.';
+    if ($noTlp === '') $errors[] = 'No Tlp wajib diisi.';
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email tidak valid.';
+    if (!in_array($status, ['aktif', 'nonaktif'], true)) $errors[] = 'Status tidak valid.';
+
+    if ($errors) {
+        flash_set('error', implode(' ', $errors));
+        redirect(app_url('/?page=client_create'));
+    }
+
+    try {
+        $newId = client_create([
+            'nama_perusahaan' => $namaPerusahaan,
+            'nama_pic' => $namaPic,
+            'alamat' => $alamat,
+            'no_tlp' => $noTlp,
+            'email' => $email,
+            'status' => $status,
+        ]);
+    } catch (Throwable $e) {
+        flash_set('error', 'Gagal menyimpan klien.');
+        redirect(app_url('/?page=client_create'));
+    }
+
+    flash_set('success', 'Klien berhasil ditambahkan.');
+    redirect(app_url('/?page=client_edit&id=' . $newId));
+}
+
+if ($action === 'client.update') {
+    csrf_verify_or_abort();
+
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) {
+        flash_set('error', 'ID tidak valid.');
+        redirect(app_url('/?page=clients'));
+    }
+
+    $namaPerusahaan = trim((string)($_POST['nama_perusahaan'] ?? ''));
+    $namaPic = trim((string)($_POST['nama_pic'] ?? ''));
+    $alamat = trim((string)($_POST['alamat'] ?? ''));
+    $noTlp = trim((string)($_POST['no_tlp'] ?? ''));
+    $email = trim((string)($_POST['email'] ?? ''));
+    $status = trim((string)($_POST['status'] ?? 'aktif'));
+
+    $errors = [];
+    if ($namaPerusahaan === '') $errors[] = 'Nama perusahaan wajib diisi.';
+    if ($namaPic === '') $errors[] = 'Nama PIC wajib diisi.';
+    if ($alamat === '') $errors[] = 'Alamat wajib diisi.';
+    if ($noTlp === '') $errors[] = 'No Tlp wajib diisi.';
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email tidak valid.';
+    if (!in_array($status, ['aktif', 'nonaktif'], true)) $errors[] = 'Status tidak valid.';
+
+    if ($errors) {
+        flash_set('error', implode(' ', $errors));
+        redirect(app_url('/?page=client_edit&id=' . $id));
+    }
+
+    try {
+        client_update($id, [
+            'nama_perusahaan' => $namaPerusahaan,
+            'nama_pic' => $namaPic,
+            'alamat' => $alamat,
+            'no_tlp' => $noTlp,
+            'email' => $email,
+            'status' => $status,
+        ]);
+    } catch (Throwable $e) {
+        flash_set('error', 'Gagal update klien.');
+        redirect(app_url('/?page=client_edit&id=' . $id));
+    }
+
+    flash_set('success', 'Data klien berhasil diupdate.');
+    redirect(app_url('/?page=client_edit&id=' . $id));
+}
+
 if ($action === 'role.create') {
     csrf_verify_or_abort();
     auth_require_admin();
@@ -681,7 +769,9 @@ if ($action === 'paket.update') {
 if ($action === 'invoice.create') {
     csrf_verify_or_abort();
 
+    $targetType = strtolower(trim((string)($_POST['target_type'] ?? 'jamaah')));
     $jamaahId = (int)($_POST['jamaah_id'] ?? 0);
+    $clientId = (int)($_POST['client_id'] ?? 0);
     $paketId = (int)($_POST['paket_id'] ?? 0);
     $tanggal = trim((string)($_POST['tanggal'] ?? ''));
     $notes = trim((string)($_POST['notes'] ?? ''));
@@ -693,13 +783,15 @@ if ($action === 'invoice.create') {
     $pajak = trim((string)($_POST['pajak'] ?? '0'));
 
     $errors = [];
-    if ($jamaahId <= 0) $errors[] = 'Jamaah wajib dipilih.';
+    if (!in_array($targetType, ['jamaah', 'client'], true)) $errors[] = 'Target invoice tidak valid.';
+    if ($targetType === 'jamaah' && $jamaahId <= 0) $errors[] = 'Jamaah wajib dipilih.';
+    if ($targetType === 'client' && $clientId <= 0) $errors[] = 'Klien wajib dipilih.';
     if ($tanggal === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) $errors[] = 'Tanggal wajib format YYYY-MM-DD.';
     if (!preg_match('/^\d+(\.\d{1,2})?$/', $diskon)) $errors[] = 'Diskon harus angka.';
     if (!preg_match('/^\d+(\.\d{1,2})?$/', $pajak)) $errors[] = 'Pajak harus angka.';
 
     $paket = null;
-    if ($paketId > 0) {
+    if ($targetType === 'jamaah' && $paketId > 0) {
         try {
             $paket = paket_find($paketId);
         } catch (Throwable $e) {
@@ -707,6 +799,19 @@ if ($action === 'invoice.create') {
         }
         if (!$paket) {
             $errors[] = 'Paket tidak ditemukan.';
+        }
+    }
+
+    if ($targetType === 'client' && $clientId > 0) {
+        try {
+            $client = client_find($clientId);
+        } catch (Throwable $e) {
+            $client = null;
+        }
+        if (!$client) {
+            $errors[] = 'Klien tidak ditemukan.';
+        } elseif ((string)$client['status'] !== 'aktif') {
+            $errors[] = 'Klien nonaktif.';
         }
     }
 
@@ -789,7 +894,8 @@ if ($action === 'invoice.create') {
 
     try {
         $newId = invoice_create([
-            'jamaah_id' => $jamaahId,
+            'jamaah_id' => $targetType === 'jamaah' ? $jamaahId : null,
+            'client_id' => $targetType === 'client' ? $clientId : null,
             'paket_id' => $paket ? (int)$paket['id'] : null,
             'tanggal' => $tanggal,
             'notes' => $notes,

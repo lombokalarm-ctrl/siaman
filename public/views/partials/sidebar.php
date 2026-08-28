@@ -12,6 +12,9 @@ $items = [
 if (auth_can_access_page('jamaah')) {
     $items[] = ['key' => 'jamaah', 'label' => 'Jamaah', 'href' => app_url('/?page=jamaah')];
 }
+if (auth_can_access_page('clients')) {
+    $items[] = ['key' => 'clients', 'label' => 'Klien', 'href' => app_url('/?page=clients')];
+}
 if (auth_can_access_page('paket')) {
     $items[] = ['key' => 'paket', 'label' => 'Paket', 'href' => app_url('/?page=paket')];
 }

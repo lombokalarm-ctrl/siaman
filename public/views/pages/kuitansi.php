@@ -31,7 +31,7 @@
       <tr>
         <th>No Kuitansi</th>
         <th>Tanggal</th>
-        <th>Jamaah</th>
+        <th>Pelanggan</th>
         <th>Invoice</th>
         <th>Metode</th>
         <th>Jumlah</th>
@@ -54,7 +54,10 @@
             <?php endif; ?>
           </td>
           <td class="mono"><?= h((string)$r['tanggal']) ?></td>
-          <td><?= h((string)$r['jamaah_nama']) ?></td>
+          <td>
+            <?= h((string)$r['target_nama']) ?>
+            <div class="sub"><?= (string)($r['target_type'] ?? '') === 'client' ? 'Klien' : 'Jamaah' ?></div>
+          </td>
           <td class="mono"><?= h((string)$r['invoice_nomor']) ?></td>
           <td><?= h((string)$r['metode']) ?></td>
           <td class="mono"><?= h(rupiah((string)$r['amount'])) ?></td>

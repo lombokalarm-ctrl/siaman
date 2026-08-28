@@ -3,12 +3,15 @@
 declare(strict_types=1);
 
 $jamaahRows = [];
+$clientRows = [];
 $paketRows = [];
 try {
     $jamaahRows = jamaah_search('', 50);
+    $clientRows = client_search('', 100);
     $paketRows = paket_search('', 100);
 } catch (Throwable $e) {
     $jamaahRows = [];
+    $clientRows = [];
     $paketRows = [];
 }
 
@@ -20,26 +23,41 @@ $prefJamaahId = (int)($_GET['jamaah_id'] ?? 0);
   <div class="card-header">
     <div>
       <div class="card-title">Buat Invoice</div>
-      <div class="card-subtitle">Pilih jamaah, lalu pilih paket (opsional) atau item manual</div>
+      <div class="card-subtitle">Bisa untuk Jamaah atau Klien</div>
     </div>
     <a class="btn" href="<?= h(app_url('/?page=invoice')) ?>">Kembali</a>
   </div>
 
-  <?php if (!$jamaahRows): ?>
-    <div class="muted">Belum ada jamaah. Buat jamaah dulu.</div>
-  <?php else: ?>
   <form method="post" action="<?= h(app_url('/?page=invoice_create')) ?>">
     <?= csrf_input() ?>
     <input type="hidden" name="_action" value="invoice.create" />
 
     <div class="row">
       <div class="field">
+        <div class="label">Ditagihkan ke</div>
+        <select class="input" name="target_type" data-invoice-target="type">
+          <option value="jamaah">Jamaah</option>
+          <option value="client">Klien</option>
+        </select>
+      </div>
+      <div class="field">
         <div class="label">Jamaah</div>
-        <select class="input" name="jamaah_id" required>
+        <select class="input" name="jamaah_id" data-invoice-target="jamaah" required>
           <option value="">Pilih jamaah</option>
           <?php foreach ($jamaahRows as $j): ?>
             <option value="<?= (int)$j['id'] ?>" <?= $prefJamaahId === (int)$j['id'] ? 'selected' : '' ?>>
               <?= h((string)$j['nama_lengkap']) ?> (<?= h((string)$j['id_jamaah']) ?>)
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="field" style="display:none" data-invoice-target="client-wrap">
+        <div class="label">Klien</div>
+        <select class="input" name="client_id" data-invoice-target="client" disabled>
+          <option value="">Pilih klien</option>
+          <?php foreach ($clientRows as $c): ?>
+            <option value="<?= (int)$c['id'] ?>">
+              <?= h((string)$c['nama_perusahaan']) ?> (<?= h((string)$c['nama_pic']) ?>)
             </option>
           <?php endforeach; ?>
         </select>
@@ -51,7 +69,7 @@ $prefJamaahId = (int)($_GET['jamaah_id'] ?? 0);
     </div>
 
     <div class="row" style="margin-top:10px">
-      <div class="field">
+      <div class="field" data-invoice-target="paket-wrap">
         <div class="label">Paket (opsional)</div>
         <select class="input" name="paket_id" data-invoice-paket="select">
           <option value="">(Tanpa paket)</option>
@@ -97,7 +115,7 @@ $prefJamaahId = (int)($_GET['jamaah_id'] ?? 0);
         <tbody data-invoice-items="body">
           <tr data-invoice-item="row">
             <td>
-              <input class="input" name="item_label[]" placeholder="contoh: DP Umroh" />
+              <textarea class="input" name="item_label[]" rows="2" placeholder="contoh: DP Umroh"></textarea>
             </td>
             <td>
               <input class="input mono" name="item_qty[]" inputmode="decimal" value="1" data-invoice-item="qty" />
@@ -145,5 +163,4 @@ $prefJamaahId = (int)($_GET['jamaah_id'] ?? 0);
       <button class="btn primary" type="submit">Buat Invoice</button>
     </div>
   </form>
-  <?php endif; ?>
 </section>

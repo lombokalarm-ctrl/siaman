@@ -99,10 +99,16 @@ $isVoid = $payment && payments_void_supported() && isset($payment['voided_at']) 
 
             <section class="kuitansi-kv">
               <div class="kuitansi-kv-row">
-                <div class="label">Jamaah</div>
+                <div class="label">Pelanggan</div>
                 <div>
-                  <div class="kuitansi-strong"><?= h((string)$payment['jamaah_nama']) ?></div>
-                  <div class="muted mono"><?= h((string)$payment['jamaah_hp']) ?></div>
+                  <?php if ((string)($payment['target_type'] ?? '') === 'client'): ?>
+                    <div class="kuitansi-strong"><?= h((string)$payment['client_perusahaan']) ?></div>
+                    <div class="muted">PIC: <span class="mono"><?= h((string)$payment['client_pic']) ?></span></div>
+                    <div class="muted mono"><?= h((string)$payment['client_tlp']) ?><?= $payment['client_email'] ? ' • ' . h((string)$payment['client_email']) : '' ?></div>
+                  <?php else: ?>
+                    <div class="kuitansi-strong"><?= h((string)$payment['jamaah_nama']) ?></div>
+                    <div class="muted mono"><?= h((string)$payment['jamaah_hp']) ?></div>
+                  <?php endif; ?>
                 </div>
               </div>
               <div class="kuitansi-kv-row">

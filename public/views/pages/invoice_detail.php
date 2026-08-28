@@ -21,11 +21,11 @@
         <div class="card-title">Invoice <span class="mono"><?= $invoice ? h((string)$invoice['nomor']) : '—' ?></span></div>
         <?php if ($invoice): ?>
           <div class="card-subtitle">
-            Jamaah:
-            <?php if (auth_can_access_page('jamaah_detail')): ?>
-              <a href="<?= h(app_url('/?page=jamaah_detail&id=' . (int)$invoice['jamaah_id'])) ?>"><?= h((string)$invoice['jamaah_nama']) ?></a>
+            <?= (string)($invoice['target_type'] ?? '') === 'client' ? 'Klien' : 'Jamaah' ?>:
+            <?php if ((string)($invoice['target_type'] ?? '') === 'jamaah' && auth_can_access_page('jamaah_detail')): ?>
+              <a href="<?= h(app_url('/?page=jamaah_detail&id=' . (int)$invoice['jamaah_id'])) ?>"><?= h((string)$invoice['target_nama']) ?></a>
             <?php else: ?>
-              <?= h((string)$invoice['jamaah_nama']) ?>
+              <?= h((string)$invoice['target_nama']) ?>
             <?php endif; ?>
             • Paket: <?= $invoice['paket_nama'] ? h((string)$invoice['paket_nama']) : '—' ?>
           </div>

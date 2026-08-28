@@ -30,6 +30,10 @@
         else if (!i.hasAttribute('readonly')) i.value = '';
         else i.value = '0';
       });
+      clone.querySelectorAll('textarea').forEach((t) => {
+        if (!(t instanceof HTMLTextAreaElement)) return;
+        t.value = '';
+      });
       body.appendChild(clone);
       calcInvoicePreview();
     }
@@ -45,6 +49,10 @@
           if (i.name === 'item_qty[]') i.value = '1';
           else if (!i.hasAttribute('readonly')) i.value = '';
           else i.value = '0';
+        });
+        row.querySelectorAll('textarea').forEach((t) => {
+          if (!(t instanceof HTMLTextAreaElement)) return;
+          t.value = '';
         });
         calcInvoicePreview();
         return;
@@ -111,10 +119,11 @@
 
     const firstRow = document.querySelector('[data-invoice-items="body"] [data-invoice-item="row"]');
     if (!(firstRow instanceof HTMLElement)) return;
-    const labelInput = firstRow.querySelector('input[name="item_label[]"]');
+    const labelInput = firstRow.querySelector('textarea[name="item_label[]"],input[name="item_label[]"]');
     const qtyInput = firstRow.querySelector('input[name="item_qty[]"]');
     const priceInput = firstRow.querySelector('input[name="item_price[]"]');
-    if (!(labelInput instanceof HTMLInputElement) || !(qtyInput instanceof HTMLInputElement) || !(priceInput instanceof HTMLInputElement)) return;
+    if (!(labelInput instanceof HTMLInputElement) && !(labelInput instanceof HTMLTextAreaElement)) return;
+    if (!(qtyInput instanceof HTMLInputElement) || !(priceInput instanceof HTMLInputElement)) return;
 
     if (opt.value) {
       if (labelInput.value.trim() === '') labelInput.value = nama;
@@ -123,6 +132,34 @@
     }
     calcInvoicePreview();
   });
+
+  const targetType = document.querySelector('[data-invoice-target="type"]');
+  const jamaahSelect = document.querySelector('[data-invoice-target="jamaah"]');
+  const clientWrap = document.querySelector('[data-invoice-target="client-wrap"]');
+  const clientSelect = document.querySelector('[data-invoice-target="client"]');
+  const paketWrap = document.querySelector('[data-invoice-target="paket-wrap"]');
+  const applyTarget = () => {
+    if (!(targetType instanceof HTMLSelectElement)) return;
+    const v = targetType.value;
+    const isClient = v === 'client';
+    if (clientWrap instanceof HTMLElement) clientWrap.style.display = isClient ? '' : 'none';
+    if (paketWrap instanceof HTMLElement) paketWrap.style.display = isClient ? 'none' : '';
+    if (jamaahSelect instanceof HTMLSelectElement) {
+      jamaahSelect.required = !isClient;
+      jamaahSelect.disabled = isClient;
+      if (isClient) jamaahSelect.value = '';
+    }
+    if (clientSelect instanceof HTMLSelectElement) {
+      clientSelect.required = isClient;
+      clientSelect.disabled = !isClient;
+      if (!isClient) clientSelect.value = '';
+    }
+    if (paketSelect instanceof HTMLSelectElement && isClient) {
+      paketSelect.value = '';
+    }
+  };
+  targetType?.addEventListener('change', applyTarget);
+  applyTarget();
 
   const lowercaseInputs = document.querySelectorAll('[data-lowercase="true"]');
   lowercaseInputs.forEach((input) => {

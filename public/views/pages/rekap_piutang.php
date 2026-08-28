@@ -130,7 +130,7 @@ if ($paketId > 0) {
         <th>No Invoice</th>
         <th>Tanggal</th>
         <th>Umur</th>
-        <th>Jamaah</th>
+        <th>Pelanggan</th>
         <th>Status</th>
         <th>Total</th>
         <th>Sudah dibayar</th>
@@ -149,8 +149,13 @@ if ($paketId > 0) {
           <td class="mono"><?= h((string)$r['tanggal']) ?></td>
           <td class="mono"><?= h((string)max(0, (int)($r['age_days'] ?? 0))) ?> hari</td>
           <td>
-            <?= h((string)$r['jamaah_nama']) ?>
-            <div class="sub"><?= h((string)$r['jamaah_kode']) ?> • <?= h((string)$r['jamaah_daftar']) ?></div>
+            <?= h((string)$r['target_nama']) ?>
+            <?php if ((string)($r['target_type'] ?? '') === 'client'): ?>
+              <div class="sub">PIC: <span class="mono"><?= h((string)($r['client_pic'] ?? '')) ?></span></div>
+              <div class="sub"><span class="mono"><?= h((string)($r['client_tlp'] ?? '')) ?></span><?= $r['client_email'] ? ' • ' . h((string)$r['client_email']) : '' ?></div>
+            <?php else: ?>
+              <div class="sub"><?= h((string)$r['jamaah_kode']) ?> • <?= h((string)$r['jamaah_daftar']) ?></div>
+            <?php endif; ?>
             <div class="sub"><?= $r['paket_nama'] ? h((string)$r['paket_nama']) : '—' ?></div>
           </td>
           <td>

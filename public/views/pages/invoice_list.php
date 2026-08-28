@@ -29,7 +29,7 @@
     <thead>
       <tr>
         <th>No Invoice</th>
-        <th>Jamaah</th>
+        <th>Pelanggan</th>
         <th>Status</th>
         <th>Total</th>
         <th>Sisa</th>
@@ -52,8 +52,12 @@
         <tr>
           <td class="mono"><?= h((string)$r['nomor']) ?></td>
           <td>
-            <?= h((string)$r['jamaah_nama']) ?>
-            <div class="sub"><?= $r['paket_nama'] ? h((string)$r['paket_nama']) : '—' ?></div>
+            <?= h((string)$r['target_nama']) ?>
+            <div class="sub">
+              <?= (string)($r['target_type'] ?? '') === 'client' ? 'Klien' : 'Jamaah' ?>
+              •
+              <?= $r['paket_nama'] ? h((string)$r['paket_nama']) : '—' ?>
+            </div>
           </td>
           <td>
             <?php if ($status === 'paid'): ?>

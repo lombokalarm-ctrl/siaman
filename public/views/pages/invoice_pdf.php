@@ -97,7 +97,20 @@ $html .= '<div class="mono right"><div><span style="color:#475467">Tanggal</span
 $html .= '<div class="hr"></div>';
 
 $html .= '<table><tbody>';
-$html .= '<tr><td style="width:50%"><div style="color:#475467">Ditagihkan Kepada</div><div style="font-weight:700;margin-top:6px">' . h((string)$invoice['jamaah_nama']) . '</div><div class="mono" style="color:#475467;margin-top:2px">' . h((string)$invoice['jamaah_kode']) . ' • ' . h((string)$invoice['jamaah_daftar']) . '</div><div class="mono" style="color:#475467;margin-top:2px">' . h((string)$invoice['jamaah_hp']) . '</div></td>';
+$billTo = '';
+if ((string)($invoice['target_type'] ?? '') === 'client') {
+    $billTo .= '<div style="color:#475467">Ditagihkan Kepada</div>';
+    $billTo .= '<div style="font-weight:700;margin-top:6px">' . h((string)($invoice['client_perusahaan'] ?? '')) . '</div>';
+    $billTo .= '<div style="color:#475467;margin-top:2px">PIC: <span class="mono">' . h((string)($invoice['client_pic'] ?? '')) . '</span></div>';
+    $billTo .= '<div class="mono" style="color:#475467;margin-top:2px">' . h((string)($invoice['client_tlp'] ?? '')) . ($invoice['client_email'] ? ' • ' . h((string)$invoice['client_email']) : '') . '</div>';
+    $billTo .= '<div style="color:#475467;margin-top:2px">' . nl2br(h((string)($invoice['client_alamat'] ?? ''))) . '</div>';
+} else {
+    $billTo .= '<div style="color:#475467">Ditagihkan Kepada</div>';
+    $billTo .= '<div style="font-weight:700;margin-top:6px">' . h((string)$invoice['jamaah_nama']) . '</div>';
+    $billTo .= '<div class="mono" style="color:#475467;margin-top:2px">' . h((string)$invoice['jamaah_kode']) . ' • ' . h((string)$invoice['jamaah_daftar']) . '</div>';
+    $billTo .= '<div class="mono" style="color:#475467;margin-top:2px">' . h((string)$invoice['jamaah_hp']) . '</div>';
+}
+$html .= '<tr><td style="width:50%">' . $billTo . '</td>';
 $html .= '<td><div style="color:#475467">Paket</div><div style="font-weight:700;margin-top:6px">' . ($invoice['paket_nama'] ? h((string)$invoice['paket_nama']) : '—') . '</div>';
 if ($invoice['notes']) $html .= '<div style="color:#475467;margin-top:6px">' . h((string)$invoice['notes']) . '</div>';
 $html .= '</td></tr></tbody></table>';
@@ -140,4 +153,3 @@ $html .= '</div><div class="sign"><div style="color:#475467">Hormat kami</div><d
 $html .= '</div></body></html>';
 
 pdf_stream($html, 'invoice-' . (string)$invoice['nomor'] . '.pdf', 'A4', 'portrait');
-

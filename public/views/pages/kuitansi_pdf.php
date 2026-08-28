@@ -83,7 +83,16 @@ $html .= '<div style="text-align:right"><div class="mono" style="font-weight:800
 $html .= '<div class="hr"></div>';
 
 $html .= '<table><tbody>';
-$html .= '<tr><td class="label">Jamaah</td><td><div style="font-weight:800">' . h((string)$payment['jamaah_nama']) . '</div><div class="mono" style="color:#475467;margin-top:2px">' . h((string)$payment['jamaah_hp']) . '</div></td></tr>';
+$customer = '';
+if ((string)($payment['target_type'] ?? '') === 'client') {
+    $customer .= '<div style="font-weight:800">' . h((string)($payment['client_perusahaan'] ?? '')) . '</div>';
+    $customer .= '<div style="color:#475467;margin-top:2px">PIC: <span class="mono">' . h((string)($payment['client_pic'] ?? '')) . '</span></div>';
+    $customer .= '<div class="mono" style="color:#475467;margin-top:2px">' . h((string)($payment['client_tlp'] ?? '')) . ($payment['client_email'] ? ' • ' . h((string)$payment['client_email']) : '') . '</div>';
+} else {
+    $customer .= '<div style="font-weight:800">' . h((string)$payment['jamaah_nama']) . '</div>';
+    $customer .= '<div class="mono" style="color:#475467;margin-top:2px">' . h((string)$payment['jamaah_hp']) . '</div>';
+}
+$html .= '<tr><td class="label">Pelanggan</td><td>' . $customer . '</td></tr>';
 $html .= '<tr><td class="label">Invoice</td><td><div class="mono" style="font-weight:750">' . h((string)$payment['invoice_nomor']) . '</div><div style="color:#475467;margin-top:2px">Paket: ' . ($payment['paket_nama'] ? h((string)$payment['paket_nama']) : '—') . '</div></td></tr>';
 $html .= '<tr><td class="label">Metode</td><td>' . h((string)$payment['metode']) . '</td></tr>';
 $html .= '<tr><td class="label">Jumlah</td><td class="mono amount">' . h(rupiah((string)$payment['amount'])) . '</td></tr>';
@@ -102,4 +111,3 @@ $html .= '<div class="foot"><div style="color:#475467"> </div><div class="sign">
 $html .= '</div></body></html>';
 
 pdf_stream($html, 'kuitansi-' . (string)$payment['nomor_kuitansi'] . '.pdf', 'A5', 'portrait');
-

@@ -35,11 +35,13 @@ function invoice_search(string $q, int $limit = 50): array
         $stmt = db()->prepare('
             SELECT
               i.id, i.nomor, i.tanggal, i.status, i.grand_total,
-              j.nama_lengkap AS jamaah_nama,
+              CASE WHEN i.client_id IS NULL THEN "jamaah" ELSE "client" END AS target_type,
+              COALESCE(j.nama_lengkap, c.nama_perusahaan) AS target_nama,
               p.nama AS paket_nama,
               ' . $paidExpr . ' AS paid_total
             FROM invoices i
-            INNER JOIN jamaah j ON j.id = i.jamaah_id
+            LEFT JOIN jamaah j ON j.id = i.jamaah_id
+            LEFT JOIN clients c ON c.id = i.client_id
             LEFT JOIN paket p ON p.id = i.paket_id
             ORDER BY i.id DESC
             LIMIT :limit
@@ -53,17 +55,23 @@ function invoice_search(string $q, int $limit = 50): array
     $stmt = db()->prepare('
         SELECT
           i.id, i.nomor, i.tanggal, i.status, i.grand_total,
-          j.nama_lengkap AS jamaah_nama,
+          CASE WHEN i.client_id IS NULL THEN "jamaah" ELSE "client" END AS target_type,
+          COALESCE(j.nama_lengkap, c.nama_perusahaan) AS target_nama,
           p.nama AS paket_nama,
           ' . $paidExpr . ' AS paid_total
         FROM invoices i
-        INNER JOIN jamaah j ON j.id = i.jamaah_id
+        LEFT JOIN jamaah j ON j.id = i.jamaah_id
+        LEFT JOIN clients c ON c.id = i.client_id
         LEFT JOIN paket p ON p.id = i.paket_id
         WHERE
           i.nomor LIKE :like OR
           j.nama_lengkap LIKE :like OR
           j.id_jamaah LIKE :like OR
-          j.nomor_pendaftaran LIKE :like
+          j.nomor_pendaftaran LIKE :like OR
+          c.nama_perusahaan LIKE :like OR
+          c.nama_pic LIKE :like OR
+          c.no_tlp LIKE :like OR
+          c.email LIKE :like
         ORDER BY i.id DESC
         LIMIT :limit
     ');
@@ -78,13 +86,21 @@ function invoice_find(int $id): ?array
     $stmt = db()->prepare('
         SELECT
           i.*,
+          CASE WHEN i.client_id IS NULL THEN "jamaah" ELSE "client" END AS target_type,
+          COALESCE(j.nama_lengkap, c.nama_perusahaan) AS target_nama,
           j.nama_lengkap AS jamaah_nama,
           j.id_jamaah AS jamaah_kode,
           j.nomor_pendaftaran AS jamaah_daftar,
           j.hp AS jamaah_hp,
+          c.nama_perusahaan AS client_perusahaan,
+          c.nama_pic AS client_pic,
+          c.no_tlp AS client_tlp,
+          c.email AS client_email,
+          c.alamat AS client_alamat,
           p.nama AS paket_nama
         FROM invoices i
-        INNER JOIN jamaah j ON j.id = i.jamaah_id
+        LEFT JOIN jamaah j ON j.id = i.jamaah_id
+        LEFT JOIN clients c ON c.id = i.client_id
         LEFT JOIN paket p ON p.id = i.paket_id
         WHERE i.id = :id
         LIMIT 1
@@ -129,10 +145,18 @@ function invoice_create(array $data): int
         $now = new DateTimeImmutable('now');
         $nomor = generate_nomor_invoice($now);
 
-        $jamaahId = (int)$data['jamaah_id'];
+        $jamaahId = (int)($data['jamaah_id'] ?? 0);
+        $clientId = (int)($data['client_id'] ?? 0);
         $paketId = $data['paket_id'] ? (int)$data['paket_id'] : null;
         $tanggal = (string)$data['tanggal'];
         $notes = $data['notes'] !== '' ? (string)$data['notes'] : null;
+
+        if (($jamaahId > 0 && $clientId > 0) || ($jamaahId <= 0 && $clientId <= 0)) {
+            throw new RuntimeException('Target invoice tidak valid.');
+        }
+        if ($clientId > 0) {
+            $paketId = null;
+        }
 
         $items = $data['items'];
         $subtotal = 0.0;
@@ -145,12 +169,13 @@ function invoice_create(array $data): int
         $grandTotal = max(0, $subtotal - $diskon + $pajak);
 
         $stmt = $pdo->prepare('
-            INSERT INTO invoices (nomor, jamaah_id, paket_id, tanggal, subtotal, diskon, pajak, grand_total, status, notes)
-            VALUES (:nomor, :jamaah_id, :paket_id, :tanggal, :subtotal, :diskon, :pajak, :grand_total, :status, :notes)
+            INSERT INTO invoices (nomor, jamaah_id, client_id, paket_id, tanggal, subtotal, diskon, pajak, grand_total, status, notes)
+            VALUES (:nomor, :jamaah_id, :client_id, :paket_id, :tanggal, :subtotal, :diskon, :pajak, :grand_total, :status, :notes)
         ');
         $stmt->execute([
             'nomor' => $nomor,
-            'jamaah_id' => $jamaahId,
+            'jamaah_id' => $jamaahId > 0 ? $jamaahId : null,
+            'client_id' => $clientId > 0 ? $clientId : null,
             'paket_id' => $paketId,
             'tanggal' => $tanggal,
             'subtotal' => $subtotal,
@@ -271,12 +296,20 @@ function payment_find(int $id): ?array
           py.*,
           i.nomor AS invoice_nomor,
           i.grand_total AS invoice_total,
+          CASE WHEN i.client_id IS NULL THEN "jamaah" ELSE "client" END AS target_type,
+          COALESCE(j.nama_lengkap, c.nama_perusahaan) AS target_nama,
           j.nama_lengkap AS jamaah_nama,
           j.hp AS jamaah_hp,
+          c.nama_perusahaan AS client_perusahaan,
+          c.nama_pic AS client_pic,
+          c.no_tlp AS client_tlp,
+          c.email AS client_email,
+          c.alamat AS client_alamat,
           p.nama AS paket_nama
         FROM payments py
         INNER JOIN invoices i ON i.id = py.invoice_id
-        INNER JOIN jamaah j ON j.id = i.jamaah_id
+        LEFT JOIN jamaah j ON j.id = i.jamaah_id
+        LEFT JOIN clients c ON c.id = i.client_id
         LEFT JOIN paket p ON p.id = i.paket_id
         WHERE py.id = :id
         LIMIT 1
@@ -357,10 +390,12 @@ function payments_search(string $q, int $limit = 50): array
             SELECT
               py.id, py.nomor_kuitansi, py.tanggal, py.amount, py.metode' . $selectVoid . ',
               i.nomor AS invoice_nomor,
-              j.nama_lengkap AS jamaah_nama
+              CASE WHEN i.client_id IS NULL THEN "jamaah" ELSE "client" END AS target_type,
+              COALESCE(j.nama_lengkap, c.nama_perusahaan) AS target_nama
             FROM payments py
             INNER JOIN invoices i ON i.id = py.invoice_id
-            INNER JOIN jamaah j ON j.id = i.jamaah_id
+            LEFT JOIN jamaah j ON j.id = i.jamaah_id
+            LEFT JOIN clients c ON c.id = i.client_id
             ORDER BY py.id DESC
             LIMIT :limit
         ');
@@ -374,14 +409,18 @@ function payments_search(string $q, int $limit = 50): array
         SELECT
           py.id, py.nomor_kuitansi, py.tanggal, py.amount, py.metode' . $selectVoid . ',
           i.nomor AS invoice_nomor,
-          j.nama_lengkap AS jamaah_nama
+          CASE WHEN i.client_id IS NULL THEN "jamaah" ELSE "client" END AS target_type,
+          COALESCE(j.nama_lengkap, c.nama_perusahaan) AS target_nama
         FROM payments py
         INNER JOIN invoices i ON i.id = py.invoice_id
-        INNER JOIN jamaah j ON j.id = i.jamaah_id
+        LEFT JOIN jamaah j ON j.id = i.jamaah_id
+        LEFT JOIN clients c ON c.id = i.client_id
         WHERE
           py.nomor_kuitansi LIKE :like OR
           i.nomor LIKE :like OR
-          j.nama_lengkap LIKE :like
+          j.nama_lengkap LIKE :like OR
+          c.nama_perusahaan LIKE :like OR
+          c.nama_pic LIKE :like
         ORDER BY py.id DESC
         LIMIT :limit
     ');
@@ -443,11 +482,13 @@ function payments_report(array $filters): array
           py.id, py.nomor_kuitansi, py.tanggal, py.amount, py.metode,
           py.pengirim, py.outlet, py.sales, py.reference' . $selectVoid . ',
           i.id AS invoice_id, i.nomor AS invoice_nomor,
-          j.nama_lengkap AS jamaah_nama,
+          CASE WHEN i.client_id IS NULL THEN "jamaah" ELSE "client" END AS target_type,
+          COALESCE(j.nama_lengkap, c.nama_perusahaan) AS target_nama,
           p.nama AS paket_nama
         FROM payments py
         INNER JOIN invoices i ON i.id = py.invoice_id
-        INNER JOIN jamaah j ON j.id = i.jamaah_id
+        LEFT JOIN jamaah j ON j.id = i.jamaah_id
+        LEFT JOIN clients c ON c.id = i.client_id
         LEFT JOIN paket p ON p.id = i.paket_id
         ' . $whereSql . '
         ORDER BY py.tanggal DESC, py.id DESC
@@ -549,7 +590,7 @@ function invoices_piutang_report(array $filters): array
     $params = [];
 
     if ($q !== '') {
-        $where[] = '(i.nomor LIKE :like OR j.nama_lengkap LIKE :like OR j.id_jamaah LIKE :like OR j.nomor_pendaftaran LIKE :like)';
+        $where[] = '(i.nomor LIKE :like OR j.nama_lengkap LIKE :like OR j.id_jamaah LIKE :like OR j.nomor_pendaftaran LIKE :like OR c.nama_perusahaan LIKE :like OR c.nama_pic LIKE :like)';
         $params['like'] = '%' . $q . '%';
     }
     if ($from !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
@@ -578,15 +619,20 @@ function invoices_piutang_report(array $filters): array
     $sql = '
         SELECT
           i.id, i.nomor, i.tanggal, i.status, i.grand_total,
-          j.nama_lengkap AS jamaah_nama,
+          CASE WHEN i.client_id IS NULL THEN "jamaah" ELSE "client" END AS target_type,
+          COALESCE(j.nama_lengkap, c.nama_perusahaan) AS target_nama,
           j.id_jamaah AS jamaah_kode,
           j.nomor_pendaftaran AS jamaah_daftar,
+          c.nama_pic AS client_pic,
+          c.no_tlp AS client_tlp,
+          c.email AS client_email,
           p.nama AS paket_nama,
           ' . $paidExpr . ' AS paid_total,
           GREATEST(0, i.grand_total - (' . $paidExpr . ')) AS remaining_total,
           DATEDIFF(CURDATE(), i.tanggal) AS age_days
         FROM invoices i
-        INNER JOIN jamaah j ON j.id = i.jamaah_id
+        LEFT JOIN jamaah j ON j.id = i.jamaah_id
+        LEFT JOIN clients c ON c.id = i.client_id
         LEFT JOIN paket p ON p.id = i.paket_id
         ' . $whereSql . '
         HAVING remaining_total > 0 AND i.status IN ("unpaid","partial")

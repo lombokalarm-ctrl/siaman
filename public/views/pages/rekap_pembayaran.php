@@ -171,7 +171,7 @@ try {
         <th>Tanggal</th>
         <th>No Kuitansi</th>
         <th>Invoice</th>
-        <th>Jamaah</th>
+        <th>Pelanggan</th>
         <th>Paket</th>
         <th>Metode</th>
         <th>Jumlah</th>
@@ -191,7 +191,10 @@ try {
           <td class="mono"><?= h((string)$r['tanggal']) ?></td>
           <td class="mono"><a href="<?= h(app_url('/?page=kuitansi_detail&id=' . (int)$r['id'])) ?>"><?= h((string)$r['nomor_kuitansi']) ?></a></td>
           <td class="mono"><a href="<?= h(app_url('/?page=invoice_detail&id=' . (int)$r['invoice_id'])) ?>"><?= h((string)$r['invoice_nomor']) ?></a></td>
-          <td><?= h((string)$r['jamaah_nama']) ?></td>
+          <td>
+            <?= h((string)$r['target_nama']) ?>
+            <div class="sub"><?= (string)($r['target_type'] ?? '') === 'client' ? 'Klien' : 'Jamaah' ?></div>
+          </td>
           <td><?= $r['paket_nama'] ? h((string)$r['paket_nama']) : '—' ?></td>
           <td><?= h((string)$r['metode']) ?></td>
           <td class="mono"><?= h(rupiah((string)$r['amount'])) ?></td>

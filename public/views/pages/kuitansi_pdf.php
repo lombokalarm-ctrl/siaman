@@ -110,4 +110,28 @@ $html .= '<div class="foot"><div style="color:#475467"> </div><div class="sign">
 
 $html .= '</div></body></html>';
 
-pdf_stream($html, 'kuitansi-' . (string)$payment['nomor_kuitansi'] . '.pdf', 'A5', 'portrait');
+$targetName = (string)(($payment['target_type'] ?? '') === 'client'
+    ? ($payment['client_perusahaan'] ?? $payment['target_nama'] ?? 'klien')
+    : ($payment['jamaah_nama'] ?? $payment['target_nama'] ?? 'jamaah'));
+$targetName = strtolower(trim($targetName));
+$targetName = preg_replace('/[^a-z0-9]+/', '_', $targetName);
+$targetName = trim((string)$targetName, '_');
+if ($targetName === '') {
+    $targetName = 'kuitansi';
+}
+
+$bulan = '00';
+$tanggal = (string)($payment['tanggal'] ?? '');
+if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
+    $bulan = substr($tanggal, 5, 2);
+}
+
+$nomor = strtoupper(trim((string)$payment['nomor_kuitansi']));
+$nomor = preg_replace('/[^A-Z0-9_-]+/', '_', $nomor);
+$nomor = trim((string)$nomor, '_');
+if ($nomor === '') {
+    $nomor = (string)$payment['id'];
+}
+
+$filename = $targetName . '_' . $bulan . '_' . $nomor . '.pdf';
+pdf_stream($html, $filename, 'A5', 'portrait');

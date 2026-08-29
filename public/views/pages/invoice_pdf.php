@@ -152,4 +152,28 @@ $html .= '</div><div class="sign"><div style="color:#475467">Hormat kami</div><d
 
 $html .= '</div></body></html>';
 
-pdf_stream($html, 'invoice-' . (string)$invoice['nomor'] . '.pdf', 'A4', 'portrait');
+$targetName = (string)($invoice['target_type'] === 'client'
+    ? ($invoice['client_perusahaan'] ?? $invoice['target_nama'] ?? 'klien')
+    : ($invoice['jamaah_nama'] ?? $invoice['target_nama'] ?? 'jamaah'));
+$targetName = strtolower(trim($targetName));
+$targetName = preg_replace('/[^a-z0-9]+/', '_', $targetName);
+$targetName = trim((string)$targetName, '_');
+if ($targetName === '') {
+    $targetName = 'invoice';
+}
+
+$bulan = '00';
+$tanggal = (string)($invoice['tanggal'] ?? '');
+if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
+    $bulan = substr($tanggal, 5, 2);
+}
+
+$nomor = strtoupper(trim((string)$invoice['nomor']));
+$nomor = preg_replace('/[^A-Z0-9_-]+/', '_', $nomor);
+$nomor = trim((string)$nomor, '_');
+if ($nomor === '') {
+    $nomor = (string)$invoice['id'];
+}
+
+$filename = $targetName . '_' . $bulan . '_' . $nomor . '.pdf';
+pdf_stream($html, $filename, 'A4', 'portrait');

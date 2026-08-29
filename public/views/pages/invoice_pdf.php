@@ -63,7 +63,7 @@ $html = '<!doctype html><html lang="id"><head><meta charset="utf-8"><style>
   .head>div{display:table-cell;vertical-align:top}
   .head>div:first-child{width:34%}
   .head>div:last-child{width:66%;text-align:right}
-  .logo{width:160px;height:64px;object-fit:contain}
+  .logo{width:160px;max-height:64px;height:auto}
   .company{font-size:16px;font-weight:700;text-align:right}
   .meta{color:#475467;margin-top:4px;line-height:1.35;text-align:right}
   .hr{height:1px;background:#e4e7ec;margin:12px 0}

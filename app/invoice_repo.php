@@ -210,6 +210,15 @@ function invoice_create(array $data): int
     }
 }
 
+function invoice_delete(int $invoiceId): void
+{
+    if ($invoiceId <= 0) {
+        throw new RuntimeException('ID tidak valid.');
+    }
+    $stmt = db()->prepare('DELETE FROM invoices WHERE id = :id LIMIT 1');
+    $stmt->execute(['id' => $invoiceId]);
+}
+
 function invoice_recalc_status(int $invoiceId): void
 {
     $pdo = db();

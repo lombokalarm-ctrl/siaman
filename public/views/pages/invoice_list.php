@@ -70,7 +70,17 @@
           </td>
           <td class="mono"><?= h(rupiah($total)) ?></td>
           <td class="mono"><?= h(rupiah($remain)) ?></td>
-          <td><a class="btn" href="<?= h(app_url('/?page=invoice_detail&id=' . (int)$r['id'])) ?>">Detail</a></td>
+          <td style="display:flex;gap:8px;justify-content:flex-end">
+            <a class="btn" href="<?= h(app_url('/?page=invoice_detail&id=' . (int)$r['id'])) ?>">Detail</a>
+            <?php if (auth_is_admin()): ?>
+              <form method="post" action="<?= h(app_url('/?page=invoice')) ?>" onsubmit="return confirm('Hapus invoice ini? Pembayaran & item akan ikut terhapus.');">
+                <?= csrf_input() ?>
+                <input type="hidden" name="_action" value="invoice.delete" />
+                <input type="hidden" name="id" value="<?= (int)$r['id'] ?>" />
+                <button class="btn danger" type="submit">Hapus</button>
+              </form>
+            <?php endif; ?>
+          </td>
         </tr>
       <?php endforeach; ?>
     </tbody>

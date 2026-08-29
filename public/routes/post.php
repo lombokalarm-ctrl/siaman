@@ -912,6 +912,25 @@ if ($action === 'invoice.create') {
     redirect(app_url('/?page=invoice_detail&id=' . $newId));
 }
 
+if ($action === 'invoice.delete') {
+    csrf_verify_or_abort();
+    auth_require_admin();
+
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) {
+        flash_set('error', 'ID invoice tidak valid.');
+        redirect(app_url('/?page=invoice'));
+    }
+
+    try {
+        invoice_delete($id);
+        flash_set('success', 'Invoice berhasil dihapus.');
+    } catch (Throwable $e) {
+        flash_set('error', 'Gagal menghapus invoice.');
+    }
+    redirect(app_url('/?page=invoice'));
+}
+
 if ($action === 'payment.create') {
     csrf_verify_or_abort();
 

@@ -37,6 +37,14 @@
         <?php if ($invoice): ?>
           <a class="btn" href="<?= h(app_url('/?page=invoice_print&id=' . (int)$invoice['id'])) ?>" target="_blank" rel="noopener">Cetak / PDF</a>
           <a class="btn" href="<?= h(app_url('/?page=invoice_pdf&id=' . (int)$invoice['id'])) ?>" target="_blank" rel="noopener">PDF (dompdf)</a>
+          <?php if (auth_is_admin()): ?>
+            <form method="post" action="<?= h(app_url('/?page=invoice_detail&id=' . (int)$invoice['id'])) ?>" onsubmit="return confirm('Hapus invoice ini? Pembayaran & item akan ikut terhapus.');">
+              <?= csrf_input() ?>
+              <input type="hidden" name="_action" value="invoice.delete" />
+              <input type="hidden" name="id" value="<?= (int)$invoice['id'] ?>" />
+              <button class="btn danger" type="submit">Hapus</button>
+            </form>
+          <?php endif; ?>
         <?php endif; ?>
         <a class="btn" href="<?= h(app_url('/?page=invoice')) ?>">Kembali</a>
       </div>

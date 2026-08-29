@@ -34,6 +34,7 @@ $kopKontak = trim((string)($kop['kontak'] ?? ''));
 $kopKota = trim((string)($kop['kota'] ?? ''));
 $kopPj = trim((string)($kop['penanggung_jawab'] ?? ''));
 $kopLogo = trim((string)($kop['logo_path'] ?? ''));
+$bankAccounts = bank_accounts_all();
 
 $titleDoc = $invoice ? ('Invoice ' . (string)$invoice['nomor']) : 'Invoice';
 
@@ -145,7 +146,21 @@ $titleDoc = $invoice ? ('Invoice ' . (string)$invoice['nomor']) : 'Invoice';
           </table>
 
           <section class="invoice-totals">
-            <div></div>
+            <div>
+              <?php if ($bankAccounts): ?>
+                <div class="invoice-totals-box">
+                  <div class="muted" style="font-weight:700">Rekening Pembayaran</div>
+                  <div class="invoice-divider" style="margin:8px 0"></div>
+                  <?php foreach ($bankAccounts as $b): ?>
+                    <div style="margin-top:8px">
+                      <div style="font-weight:700"><?= h((string)$b['bank_nama']) ?></div>
+                      <div class="mono"><?= h((string)$b['no_rekening']) ?></div>
+                      <div class="muted"><?= h((string)$b['nama_rekening']) ?></div>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+              <?php endif; ?>
+            </div>
             <div class="invoice-totals-box">
               <div class="invoice-totals-row">
                 <div class="muted">Subtotal</div>

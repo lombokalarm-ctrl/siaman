@@ -12,6 +12,7 @@ require __DIR__ . '/../app/settings_repo.php';
 require __DIR__ . '/../app/numbering.php';
 require __DIR__ . '/../app/terbilang.php';
 require __DIR__ . '/../app/pdf.php';
+require __DIR__ . '/../app/bank_account_repo.php';
 require __DIR__ . '/../app/jamaah_repo.php';
 require __DIR__ . '/../app/client_repo.php';
 require __DIR__ . '/../app/paket_repo.php';

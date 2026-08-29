@@ -16,9 +16,11 @@
       'penanggung_jawab' => '',
       'logo_path' => '',
   ];
+  $bankAccounts = [];
   try {
       $format = settings_get_pendaftaran_format();
       $kop = settings_get_invoice_kop();
+      $bankAccounts = bank_accounts_all();
   } catch (Throwable $e) {
       $dbError = $e->getMessage();
   }
@@ -193,6 +195,76 @@
         <button class="btn primary" type="submit">Simpan</button>
       </div>
     </form>
+  </div>
+
+  <div class="card" style="grid-column:1 / -1">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Rekening Perusahaan</div>
+        <div class="card-subtitle">Ditampilkan di invoice untuk pembayaran transfer</div>
+      </div>
+      <span class="badge muted">MVP</span>
+    </div>
+
+    <form method="post" action="<?= h(app_url('/?page=settings')) ?>">
+      <?= csrf_input() ?>
+      <input type="hidden" name="_action" value="bank_account.create" />
+
+      <section class="grid cols-3">
+        <div class="field">
+          <div class="label">Nama Bank</div>
+          <input class="input" name="bank_nama" required />
+        </div>
+        <div class="field">
+          <div class="label">No Rekening</div>
+          <input class="input mono" name="no_rekening" required />
+        </div>
+        <div class="field">
+          <div class="label">Nama di Rekening</div>
+          <input class="input" name="nama_rekening" required />
+        </div>
+      </section>
+
+      <div class="hr"></div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn" type="reset">Batal</button>
+        <button class="btn primary" type="submit">Tambah</button>
+      </div>
+    </form>
+
+    <div class="hr"></div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Bank</th>
+          <th>No Rekening</th>
+          <th>Nama</th>
+          <th style="width:120px">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (!$bankAccounts): ?>
+          <tr><td colspan="4" class="muted">Belum ada rekening.</td></tr>
+        <?php endif; ?>
+        <?php foreach ($bankAccounts as $b): ?>
+          <tr>
+            <td><?= h((string)$b['bank_nama']) ?></td>
+            <td class="mono"><?= h((string)$b['no_rekening']) ?></td>
+            <td><?= h((string)$b['nama_rekening']) ?></td>
+            <td>
+              <form method="post" action="<?= h(app_url('/?page=settings')) ?>" onsubmit="return confirm('Hapus rekening ini?');">
+                <?= csrf_input() ?>
+                <input type="hidden" name="_action" value="bank_account.delete" />
+                <input type="hidden" name="id" value="<?= (int)$b['id'] ?>" />
+                <button class="btn danger" type="submit">Hapus</button>
+              </form>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
   </div>
 
   <div class="card">

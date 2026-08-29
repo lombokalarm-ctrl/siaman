@@ -54,6 +54,8 @@ foreach ($payments as $p) {
     $paymentsClean[] = $p;
 }
 
+$bankAccounts = bank_accounts_all();
+
 $html = '<!doctype html><html lang="id"><head><meta charset="utf-8"><style>
   @page{margin:16mm 14mm}
   *{box-sizing:border-box}
@@ -76,6 +78,7 @@ $html = '<!doctype html><html lang="id"><head><meta charset="utf-8"><style>
   th,td{border-bottom:1px solid #e4e7ec;padding:8px 6px;vertical-align:top}
   th{background:#f8fafc;text-align:left}
   .right{text-align:right}
+  .bank{width:320px;float:left;border:1px solid #e4e7ec;border-radius:8px;padding:10px;clear:both}
   .totals{width:320px;float:right;border:1px solid #e4e7ec;border-radius:8px;padding:10px;clear:both}
   .row{display:table;width:100%;margin-top:6px}
   .row:first-child{margin-top:0}
@@ -133,7 +136,20 @@ foreach ($items as $it) {
 }
 $html .= '</tbody></table>';
 
-$html .= '<div style="margin-top:12px" class="totals">';
+$html .= '<div style="margin-top:12px">';
+if ($bankAccounts) {
+    $html .= '<div class="bank">';
+    $html .= '<div style="font-weight:800;color:#475467">Rekening Pembayaran</div>';
+    foreach ($bankAccounts as $b) {
+        $html .= '<div style="margin-top:8px">';
+        $html .= '<div style="font-weight:800">' . h((string)$b['bank_nama']) . '</div>';
+        $html .= '<div class="mono" style="margin-top:2px">' . h((string)$b['no_rekening']) . '</div>';
+        $html .= '<div style="color:#475467;margin-top:2px">' . h((string)$b['nama_rekening']) . '</div>';
+        $html .= '</div>';
+    }
+    $html .= '</div>';
+}
+$html .= '<div class="totals">';
 $html .= '<div class="row"><div style="color:#475467">Subtotal</div><div class="mono">' . h(rupiah((string)$invoice['subtotal'])) . '</div></div>';
 $html .= '<div class="row"><div style="color:#475467">Diskon</div><div class="mono">' . h(rupiah((string)$invoice['diskon'])) . '</div></div>';
 $html .= '<div class="row"><div style="color:#475467">Pajak</div><div class="mono">' . h(rupiah((string)$invoice['pajak'])) . '</div></div>';
@@ -141,7 +157,7 @@ $html .= '<div class="row grand"><div>Grand Total</div><div class="mono">' . h(r
 $html .= '<div class="hr" style="margin:10px 0"></div>';
 $html .= '<div class="row"><div style="color:#475467">Sudah dibayar</div><div class="mono">' . h(rupiah((float)$invoice['paid_total'])) . '</div></div>';
 $html .= '<div class="row"><div style="color:#475467">Sisa</div><div class="mono">' . h(rupiah((float)$invoice['remaining_total'])) . '</div></div>';
-$html .= '</div>';
+$html .= '</div><div style="clear:both"></div></div>';
 
 if ($paymentsClean) {
     $html .= '<div class="hr"></div><div style="font-weight:800;margin:6px 0">Histori Pembayaran</div>';

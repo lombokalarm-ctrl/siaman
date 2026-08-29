@@ -159,6 +159,53 @@ if ($action === 'settings.kop.update') {
     redirect(app_url('/?page=settings'));
 }
 
+if ($action === 'bank_account.create') {
+    csrf_verify_or_abort();
+
+    $bankNama = trim((string)($_POST['bank_nama'] ?? ''));
+    $noRekening = trim((string)($_POST['no_rekening'] ?? ''));
+    $namaRekening = trim((string)($_POST['nama_rekening'] ?? ''));
+
+    $errors = [];
+    if ($bankNama === '') $errors[] = 'Nama bank wajib diisi.';
+    if ($noRekening === '') $errors[] = 'No rekening wajib diisi.';
+    if ($namaRekening === '') $errors[] = 'Nama rekening wajib diisi.';
+    if ($errors) {
+        flash_set('error', implode(' ', $errors));
+        redirect(app_url('/?page=settings'));
+    }
+
+    try {
+        bank_account_create([
+            'bank_nama' => $bankNama,
+            'no_rekening' => $noRekening,
+            'nama_rekening' => $namaRekening,
+        ]);
+        flash_set('success', 'Rekening berhasil ditambahkan.');
+    } catch (Throwable $e) {
+        flash_set('error', 'Gagal menambah rekening.');
+    }
+    redirect(app_url('/?page=settings'));
+}
+
+if ($action === 'bank_account.delete') {
+    csrf_verify_or_abort();
+
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) {
+        flash_set('error', 'ID rekening tidak valid.');
+        redirect(app_url('/?page=settings'));
+    }
+
+    try {
+        bank_account_delete($id);
+        flash_set('success', 'Rekening berhasil dihapus.');
+    } catch (Throwable $e) {
+        flash_set('error', 'Gagal menghapus rekening.');
+    }
+    redirect(app_url('/?page=settings'));
+}
+
 if ($action === 'jamaah.create') {
     csrf_verify_or_abort();
 

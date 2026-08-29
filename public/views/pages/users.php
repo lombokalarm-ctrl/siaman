@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-auth_require_admin();
+auth_require_admin_or_staff();
 
 $roles = [];
 $users = [];

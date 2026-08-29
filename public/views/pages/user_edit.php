@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-auth_require_admin();
+auth_require_admin_or_staff();
 
 $id = (int)($_GET['id'] ?? 0);
 if ($id <= 0) {

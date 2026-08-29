@@ -593,7 +593,7 @@ if ($action === 'client.update') {
 
 if ($action === 'role.create') {
     csrf_verify_or_abort();
-    auth_require_admin();
+    auth_require_admin_or_staff();
 
     $name = (string)($_POST['name'] ?? '');
     try {
@@ -607,7 +607,7 @@ if ($action === 'role.create') {
 
 if ($action === 'user.create') {
     csrf_verify_or_abort();
-    auth_require_admin();
+    auth_require_admin_or_staff();
 
     $username = (string)($_POST['username'] ?? '');
     $roleId = (int)($_POST['role_id'] ?? 0);
@@ -631,7 +631,7 @@ if ($action === 'user.create') {
 
 if ($action === 'user.update') {
     csrf_verify_or_abort();
-    auth_require_admin();
+    auth_require_admin_or_staff();
 
     $id = (int)($_POST['id'] ?? 0);
     $username = (string)($_POST['username'] ?? '');

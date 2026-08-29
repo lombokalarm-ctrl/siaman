@@ -119,6 +119,21 @@ function auth_is_admin(): bool
     return $u !== null && $u['role'] === 'admin';
 }
 
+function auth_is_staff(): bool
+{
+    $u = auth_user();
+    return $u !== null && $u['role'] === 'staff';
+}
+
+function auth_is_admin_or_staff(): bool
+{
+    $u = auth_user();
+    if ($u === null) {
+        return false;
+    }
+    return $u['role'] === 'admin' || $u['role'] === 'staff';
+}
+
 function auth_role(): string
 {
     $u = auth_user();
@@ -133,30 +148,11 @@ function auth_can_access_page(string $pageKey): bool
     if (!auth_is_logged_in()) {
         return false;
     }
-    if (auth_is_admin()) {
+    if (auth_is_admin_or_staff()) {
         return true;
     }
 
     $role = auth_role();
-    if ($role === 'staff') {
-        return in_array($pageKey, [
-            'dashboard',
-            'jamaah',
-            'jamaah_create',
-            'jamaah_detail',
-            'jamaah_edit',
-            'jamaah_import',
-            'clients',
-            'client_create',
-            'client_edit',
-            'invoice',
-            'invoice_create',
-            'invoice_detail',
-            'invoice_print',
-            'invoice_pdf',
-        ], true);
-    }
-
     if ($role === 'keuangan') {
         return in_array($pageKey, [
             'dashboard',
@@ -190,19 +186,11 @@ function auth_can_do_action(string $action): bool
     if (auth_is_admin()) {
         return true;
     }
-
-    $role = auth_role();
-    if ($role === 'staff') {
-        return in_array($action, [
-            'jamaah.create',
-            'jamaah.update',
-            'jamaah.import',
-            'client.create',
-            'client.update',
-            'invoice.create',
-        ], true);
+    if (auth_is_staff()) {
+        return $action !== 'invoice.delete';
     }
 
+    $role = auth_role();
     if ($role === 'keuangan') {
         return in_array($action, [
             'payment.create',
@@ -229,6 +217,16 @@ function auth_require_admin(): void
 {
     auth_require();
     if (!auth_is_admin()) {
+        http_response_code(403);
+        echo 'Forbidden';
+        exit;
+    }
+}
+
+function auth_require_admin_or_staff(): void
+{
+    auth_require();
+    if (!auth_is_admin_or_staff()) {
         http_response_code(403);
         echo 'Forbidden';
         exit;

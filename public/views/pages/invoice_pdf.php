@@ -55,27 +55,37 @@ foreach ($payments as $p) {
 }
 
 $html = '<!doctype html><html lang="id"><head><meta charset="utf-8"><style>
+  @page{margin:16mm 14mm}
   *{box-sizing:border-box}
-  body{font-family:Arial, Helvetica, sans-serif;font-size:12px;color:#101828}
-  .wrap{padding:18px}
-  .head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  body{margin:0;font-family:Arial, Helvetica, sans-serif;font-size:12px;color:#101828}
+  .wrap{padding:0}
+  .head{display:table;width:100%}
+  .head>div{display:table-cell;vertical-align:top}
+  .head>div:first-child{width:34%}
+  .head>div:last-child{width:66%;text-align:right}
   .logo{width:160px;height:64px;object-fit:contain}
   .company{font-size:16px;font-weight:700;text-align:right}
   .meta{color:#475467;margin-top:4px;line-height:1.35;text-align:right}
   .hr{height:1px;background:#e4e7ec;margin:12px 0}
-  .top{display:flex;justify-content:space-between;gap:12px}
+  .top{display:table;width:100%}
+  .top>div{display:table-cell;vertical-align:top}
+  .top>div:last-child{text-align:right}
   .title{font-size:14px;font-weight:800;letter-spacing:.6px}
   .mono{font-variant-numeric:tabular-nums}
   table{width:100%;border-collapse:collapse}
   th,td{border-bottom:1px solid #e4e7ec;padding:8px 6px;vertical-align:top}
   th{background:#f8fafc;text-align:left}
   .right{text-align:right}
-  .totals{width:320px;margin-left:auto;border:1px solid #e4e7ec;border-radius:8px;padding:10px}
-  .row{display:flex;justify-content:space-between;gap:10px;margin-top:6px}
+  .totals{width:320px;float:right;border:1px solid #e4e7ec;border-radius:8px;padding:10px;clear:both}
+  .row{display:table;width:100%;margin-top:6px}
   .row:first-child{margin-top:0}
+  .row>div{display:table-cell;vertical-align:top}
+  .row>div:last-child{text-align:right}
   .grand{font-weight:800;margin-top:10px}
-  .foot{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin-top:14px}
-  .sign{width:220px;text-align:center}
+  .foot{display:table;width:100%;margin-top:14px}
+  .foot>div{display:table-cell;vertical-align:bottom}
+  .foot>div:last-child{text-align:right}
+  .sign{width:220px;text-align:center;display:inline-block}
   .line{height:34px;border-bottom:1px solid #e4e7ec;margin-top:10px}
 </style></head><body><div class="wrap">';
 

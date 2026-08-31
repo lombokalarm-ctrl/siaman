@@ -4,31 +4,118 @@ declare(strict_types=1);
 
 function jamaah_find(int $id): ?array
 {
-    $stmt = db()->prepare('SELECT * FROM jamaah WHERE id = :id LIMIT 1');
+    $stmt = db()->prepare('
+        SELECT
+          j.*,
+          p.nama AS paket_nama
+        FROM jamaah j
+        LEFT JOIN paket p ON p.id = j.paket_id
+        WHERE j.id = :id
+        LIMIT 1
+    ');
     $stmt->execute(['id' => $id]);
     $row = $stmt->fetch();
     return $row ?: null;
 }
 
-function jamaah_search(string $q, int $limit = 50): array
+function jamaah_search(string $q, int $limit = 50, ?int $paketId = null): array
+{
+    $q = trim($q);
+    $paketId = $paketId !== null && $paketId > 0 ? (int)$paketId : null;
+    if ($q === '') {
+        if ($paketId !== null) {
+            $stmt = db()->prepare('
+                SELECT
+                  j.id, j.id_jamaah, j.nomor_pendaftaran, j.nama_lengkap, j.nik, j.hp, j.email, j.status,
+                  j.paket_id, p.nama AS paket_nama
+                FROM jamaah j
+                LEFT JOIN paket p ON p.id = j.paket_id
+                WHERE j.paket_id = :paket_id
+                ORDER BY j.id DESC
+                LIMIT :limit
+            ');
+            $stmt->bindValue('paket_id', $paketId, PDO::PARAM_INT);
+            $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        }
+
+        $stmt = db()->prepare('
+            SELECT
+              j.id, j.id_jamaah, j.nomor_pendaftaran, j.nama_lengkap, j.nik, j.hp, j.email, j.status,
+              j.paket_id, p.nama AS paket_nama
+            FROM jamaah j
+            LEFT JOIN paket p ON p.id = j.paket_id
+            ORDER BY j.id DESC
+            LIMIT :limit
+        ');
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    $like = '%' . $q . '%';
+    $sql = '
+        SELECT
+          j.id, j.id_jamaah, j.nomor_pendaftaran, j.nama_lengkap, j.nik, j.hp, j.email, j.status,
+          j.paket_id, p.nama AS paket_nama
+        FROM jamaah j
+        LEFT JOIN paket p ON p.id = j.paket_id
+        WHERE
+          (j.nama_lengkap LIKE :like OR
+           j.id_jamaah LIKE :like OR
+           j.nomor_pendaftaran LIKE :like OR
+           j.nik LIKE :like OR
+           j.hp LIKE :like)
+    ';
+    if ($paketId !== null) {
+        $sql .= ' AND j.paket_id = :paket_id ';
+    }
+    $sql .= ' ORDER BY j.id DESC LIMIT :limit ';
+    $stmt = db()->prepare($sql);
+    $stmt->bindValue('like', $like, PDO::PARAM_STR);
+    if ($paketId !== null) {
+        $stmt->bindValue('paket_id', $paketId, PDO::PARAM_INT);
+    }
+    $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
+function jamaah_search_unassigned(string $q, int $limit = 500): array
 {
     $q = trim($q);
     if ($q === '') {
-        $stmt = db()->query('SELECT id, id_jamaah, nomor_pendaftaran, nama_lengkap, nik, hp, email, status FROM jamaah ORDER BY id DESC LIMIT 50');
+        $stmt = db()->prepare('
+            SELECT
+              j.id, j.id_jamaah, j.nomor_pendaftaran, j.nama_lengkap, j.nik, j.hp, j.email, j.status,
+              j.paket_id, p.nama AS paket_nama
+            FROM jamaah j
+            LEFT JOIN paket p ON p.id = j.paket_id
+            WHERE j.paket_id IS NULL
+            ORDER BY j.id DESC
+            LIMIT :limit
+        ');
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 
     $like = '%' . $q . '%';
     $stmt = db()->prepare('
-        SELECT id, id_jamaah, nomor_pendaftaran, nama_lengkap, nik, hp, email, status
-        FROM jamaah
-        WHERE
-          nama_lengkap LIKE :like OR
-          id_jamaah LIKE :like OR
-          nomor_pendaftaran LIKE :like OR
-          nik LIKE :like OR
-          hp LIKE :like
-        ORDER BY id DESC
+        SELECT
+          j.id, j.id_jamaah, j.nomor_pendaftaran, j.nama_lengkap, j.nik, j.hp, j.email, j.status,
+          j.paket_id, p.nama AS paket_nama
+        FROM jamaah j
+        LEFT JOIN paket p ON p.id = j.paket_id
+        WHERE j.paket_id IS NULL AND (
+          j.nama_lengkap LIKE :like OR
+          j.id_jamaah LIKE :like OR
+          j.nomor_pendaftaran LIKE :like OR
+          j.nik LIKE :like OR
+          j.hp LIKE :like
+        )
+        ORDER BY j.id DESC
         LIMIT :limit
     ');
     $stmt->bindValue('like', $like, PDO::PARAM_STR);
@@ -41,6 +128,7 @@ function jamaah_update(int $id, array $data): void
 {
     $stmt = db()->prepare('
         UPDATE jamaah SET
+          paket_id = :paket_id,
           nama_lengkap = :nama_lengkap,
           nama_bapak_kandung = :nama_bapak_kandung,
           nik = :nik,
@@ -60,6 +148,7 @@ function jamaah_update(int $id, array $data): void
     ');
     $stmt->execute([
         'id' => $id,
+        'paket_id' => (int)$data['paket_id'],
         'nama_lengkap' => (string)$data['nama_lengkap'],
         'nama_bapak_kandung' => (string)$data['nama_bapak_kandung'],
         'nik' => (string)$data['nik'],

@@ -209,6 +209,7 @@ if ($action === 'bank_account.delete') {
 if ($action === 'jamaah.create') {
     csrf_verify_or_abort();
 
+    $paketId = (int)($_POST['paket_id'] ?? 0);
     $namaLengkap = trim((string)($_POST['nama_lengkap'] ?? ''));
     $namaBapak = trim((string)($_POST['nama_bapak_kandung'] ?? ''));
     $nik = preg_replace('/\s+/', '', (string)($_POST['nik'] ?? ''));
@@ -224,6 +225,7 @@ if ($action === 'jamaah.create') {
     $email = trim((string)($_POST['email'] ?? ''));
 
     $errors = [];
+    if ($paketId <= 0) $errors[] = 'Paket wajib dipilih.';
     if ($namaLengkap === '') $errors[] = 'Nama lengkap wajib diisi.';
     if ($namaBapak === '') $errors[] = 'Nama bapak kandung wajib diisi.';
     if ($nik === '') $errors[] = 'NIK wajib diisi.';
@@ -237,6 +239,18 @@ if ($action === 'jamaah.create') {
     if ($alamatLengkap === '') $errors[] = 'Alamat lengkap wajib diisi.';
     if ($hp === '') $errors[] = 'Nomor HP/WhatsApp wajib diisi.';
     if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email tidak valid.';
+
+    $paket = null;
+    if ($paketId > 0) {
+        try {
+            $paket = paket_find($paketId);
+        } catch (Throwable $e) {
+            $paket = null;
+        }
+        if (!$paket) {
+            $errors[] = 'Paket tidak ditemukan.';
+        }
+    }
 
     if ($errors) {
         flash_set('error', implode(' ', $errors));
@@ -253,11 +267,11 @@ if ($action === 'jamaah.create') {
 
         $stmt = $pdo->prepare('
             INSERT INTO jamaah (
-                id_jamaah, nomor_pendaftaran,
+                id_jamaah, nomor_pendaftaran, paket_id,
                 nama_lengkap, nama_bapak_kandung, nik, nomor_kk, tempat_lahir, tanggal_lahir,
                 jenis_kelamin, status_pernikahan, pendidikan, pekerjaan, alamat_lengkap, hp, email, status
             ) VALUES (
-                :id_jamaah, :nomor_pendaftaran,
+                :id_jamaah, :nomor_pendaftaran, :paket_id,
                 :nama_lengkap, :nama_bapak_kandung, :nik, :nomor_kk, :tempat_lahir, :tanggal_lahir,
                 :jenis_kelamin, :status_pernikahan, :pendidikan, :pekerjaan, :alamat_lengkap, :hp, :email, :status
             )
@@ -265,6 +279,7 @@ if ($action === 'jamaah.create') {
         $stmt->execute([
             'id_jamaah' => $idJamaah,
             'nomor_pendaftaran' => $nomorPendaftaran,
+            'paket_id' => $paketId,
             'nama_lengkap' => $namaLengkap,
             'nama_bapak_kandung' => $namaBapak,
             'nik' => $nik,
@@ -302,6 +317,7 @@ if ($action === 'jamaah.update') {
         redirect(app_url('/?page=jamaah'));
     }
 
+    $paketId = (int)($_POST['paket_id'] ?? 0);
     $namaLengkap = trim((string)($_POST['nama_lengkap'] ?? ''));
     $namaBapak = trim((string)($_POST['nama_bapak_kandung'] ?? ''));
     $nik = preg_replace('/\s+/', '', (string)($_POST['nik'] ?? ''));
@@ -318,6 +334,7 @@ if ($action === 'jamaah.update') {
     $status = trim((string)($_POST['status'] ?? 'aktif'));
 
     $errors = [];
+    if ($paketId <= 0) $errors[] = 'Paket wajib dipilih.';
     if ($namaLengkap === '') $errors[] = 'Nama lengkap wajib diisi.';
     if ($namaBapak === '') $errors[] = 'Nama bapak kandung wajib diisi.';
     if ($nik === '') $errors[] = 'NIK wajib diisi.';
@@ -333,6 +350,18 @@ if ($action === 'jamaah.update') {
     if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email tidak valid.';
     if (!in_array($status, ['aktif', 'nonaktif'], true)) $errors[] = 'Status tidak valid.';
 
+    $paket = null;
+    if ($paketId > 0) {
+        try {
+            $paket = paket_find($paketId);
+        } catch (Throwable $e) {
+            $paket = null;
+        }
+        if (!$paket) {
+            $errors[] = 'Paket tidak ditemukan.';
+        }
+    }
+
     if ($errors) {
         flash_set('error', implode(' ', $errors));
         redirect(app_url('/?page=jamaah_edit&id=' . $id));
@@ -340,6 +369,7 @@ if ($action === 'jamaah.update') {
 
     try {
         jamaah_update($id, [
+            'paket_id' => $paketId,
             'nama_lengkap' => $namaLengkap,
             'nama_bapak_kandung' => $namaBapak,
             'nik' => $nik,
@@ -366,6 +396,21 @@ if ($action === 'jamaah.update') {
 
 if ($action === 'jamaah.import') {
     csrf_verify_or_abort();
+
+    $paketId = (int)($_POST['paket_id'] ?? 0);
+    if ($paketId <= 0) {
+        flash_set('error', 'Paket wajib dipilih.');
+        redirect(app_url('/?page=jamaah_import'));
+    }
+    try {
+        $paket = paket_find($paketId);
+    } catch (Throwable $e) {
+        $paket = null;
+    }
+    if (!$paket) {
+        flash_set('error', 'Paket tidak ditemukan.');
+        redirect(app_url('/?page=jamaah_import'));
+    }
 
     if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
         flash_set('error', 'File tidak ditemukan.');
@@ -448,11 +493,11 @@ if ($action === 'jamaah.import') {
         $stmtExists = $pdo->prepare('SELECT id FROM jamaah WHERE nik = :nik LIMIT 1');
         $stmtInsert = $pdo->prepare('
             INSERT INTO jamaah (
-                id_jamaah, nomor_pendaftaran,
+                id_jamaah, nomor_pendaftaran, paket_id,
                 nama_lengkap, nama_bapak_kandung, nik, nomor_kk, tempat_lahir, tanggal_lahir,
                 jenis_kelamin, status_pernikahan, pendidikan, pekerjaan, alamat_lengkap, hp, email, status
             ) VALUES (
-                :id_jamaah, :nomor_pendaftaran,
+                :id_jamaah, :nomor_pendaftaran, :paket_id,
                 :nama_lengkap, :nama_bapak_kandung, :nik, :nomor_kk, :tempat_lahir, :tanggal_lahir,
                 :jenis_kelamin, :status_pernikahan, :pendidikan, :pekerjaan, :alamat_lengkap, :hp, :email, :status
             )
@@ -515,6 +560,7 @@ if ($action === 'jamaah.import') {
                 $stmtInsert->execute([
                     'id_jamaah' => $idJamaah,
                     'nomor_pendaftaran' => $nomorPendaftaran,
+                    'paket_id' => $paketId,
                     'nama_lengkap' => $namaLengkap,
                     'nama_bapak_kandung' => $namaBapak,
                     'nik' => $nik,

@@ -40,6 +40,11 @@
       </div>
     </div>
 
+    <div class="field" style="margin-top:10px">
+      <div class="label">Paket</div>
+      <input class="input" value="<?= h((string)($jamaah['paket_nama'] ?? '—')) ?>" readonly />
+    </div>
+
     <div class="row" style="margin-top:10px">
       <div class="field">
         <div class="label">Nama Lengkap</div>

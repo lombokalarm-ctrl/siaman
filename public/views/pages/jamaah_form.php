@@ -10,6 +10,13 @@ $seqLength = (int)$format['seq_length'];
 $resetPolicy = (string)$format['reset_policy'];
 $yearPart = '';
 
+$paketRows = [];
+try {
+    $paketRows = paket_search('', 200);
+} catch (Throwable $e) {
+    $paketRows = [];
+}
+
 $now = new DateTimeImmutable('now');
 if ($yearToken === '{YYYY}') {
     $yearPart = $now->format('Y');
@@ -51,6 +58,18 @@ $preview = implode($separator, $parts);
   <form method="post" action="<?= h(app_url('/?page=jamaah_create')) ?>">
     <?= csrf_input() ?>
     <input type="hidden" name="_action" value="jamaah.create" />
+
+    <div class="field">
+      <div class="label">Paket</div>
+      <select class="input" name="paket_id" required>
+        <option value="">Pilih paket...</option>
+        <?php foreach ($paketRows as $p): ?>
+          <option value="<?= (int)$p['id'] ?>">
+            <?= h((string)$p['nama']) ?><?= $p['kode'] ? ' • ' . h((string)$p['kode']) : '' ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+    </div>
 
     <div class="row">
       <div class="field">

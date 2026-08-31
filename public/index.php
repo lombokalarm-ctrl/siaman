@@ -23,6 +23,7 @@ require __DIR__ . '/../app/user_repo.php';
 $pages = [
     'dashboard' => ['title' => 'Dashboard', 'view' => __DIR__ . '/views/pages/dashboard.php'],
     'jamaah' => ['title' => 'Jamaah', 'view' => __DIR__ . '/views/pages/jamaah_list.php'],
+    'jamaah_unassigned' => ['title' => 'Jamaah Tanpa Paket', 'view' => __DIR__ . '/views/pages/jamaah_unassigned.php'],
     'jamaah_import' => ['title' => 'Import Jamaah', 'view' => __DIR__ . '/views/pages/jamaah_import.php'],
     'login' => ['title' => 'Login', 'view' => __DIR__ . '/views/pages/login.php'],
     'clients' => ['title' => 'Klien', 'view' => __DIR__ . '/views/pages/client_list.php'],

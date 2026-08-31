@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+$paketRows = [];
+try {
+    $paketRows = paket_search('', 200);
+} catch (Throwable $e) {
+    $paketRows = [];
+}
+
 ?>
 <section class="card">
   <div class="card-header">
@@ -17,6 +24,19 @@ declare(strict_types=1);
   <form method="post" action="<?= h(app_url('/?page=jamaah_import')) ?>" enctype="multipart/form-data">
     <?= csrf_input() ?>
     <input type="hidden" name="_action" value="jamaah.import" />
+
+    <div class="field">
+      <div class="label">Paket</div>
+      <select class="input" name="paket_id" required>
+        <option value="">Pilih paket...</option>
+        <?php foreach ($paketRows as $p): ?>
+          <option value="<?= (int)$p['id'] ?>">
+            <?= h((string)$p['nama']) ?><?= $p['kode'] ? ' • ' . h((string)$p['kode']) : '' ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+      <div class="help">Semua jamaah di file CSV akan masuk ke paket ini</div>
+    </div>
 
     <div class="grid cols-2">
       <div class="field">

@@ -8,6 +8,23 @@
     <div class="toolbar-right">
       <form method="get" action="<?= h(app_url('/')) ?>" style="display:flex;gap:8px;align-items:center">
         <input type="hidden" name="page" value="invoice" />
+        <?php
+        $paketRows = [];
+        try {
+            $paketRows = paket_search('', 200);
+        } catch (Throwable $e) {
+            $paketRows = [];
+        }
+        $paketId = (int)($_GET['paket_id'] ?? 0);
+        ?>
+        <select class="input" name="paket_id" required style="width:260px">
+          <option value="">Pilih paket dulu...</option>
+          <?php foreach ($paketRows as $p): ?>
+            <option value="<?= (int)$p['id'] ?>" <?= $paketId === (int)$p['id'] ? 'selected' : '' ?>>
+              <?= h((string)$p['nama']) ?><?= $p['kode'] ? ' • ' . h((string)$p['kode']) : '' ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
         <input class="input" style="width:260px" type="text" name="q" value="<?= h((string)($_GET['q'] ?? '')) ?>" placeholder="Cari: nomor / jamaah / id / daftar" aria-label="Cari invoice" />
         <button class="btn" type="submit">Cari</button>
       </form>
@@ -19,7 +36,11 @@
   <?php
   $rows = [];
   try {
-      $rows = invoice_search((string)($_GET['q'] ?? ''));
+      if ($paketId > 0) {
+          $rows = invoice_search((string)($_GET['q'] ?? ''), 500, $paketId);
+      } else {
+          $rows = [];
+      }
   } catch (Throwable $e) {
       $rows = [];
   }
@@ -39,7 +60,7 @@
     <tbody>
       <?php if (!$rows): ?>
         <tr>
-          <td colspan="6" class="muted">Belum ada data invoice.</td>
+          <td colspan="6" class="muted"><?= $paketId > 0 ? 'Belum ada data invoice untuk paket ini.' : 'Pilih paket dulu untuk melihat daftar invoice.' ?></td>
         </tr>
       <?php endif; ?>
       <?php foreach ($rows as $r): ?>

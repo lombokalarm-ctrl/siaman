@@ -152,7 +152,7 @@ function auth_can_access_page(string $pageKey): bool
         return true;
     }
     if (auth_is_staff()) {
-        return $pageKey !== 'invoice_edit';
+        return !in_array($pageKey, ['invoice_edit', 'jamaah_unassigned'], true);
     }
     if (auth_is_admin_or_staff()) {
         return true;

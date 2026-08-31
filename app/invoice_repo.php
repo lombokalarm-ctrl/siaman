@@ -25,14 +25,15 @@ function payments_void_supported(): bool
     }
 }
 
-function invoice_search(string $q, int $limit = 50): array
+function invoice_search(string $q, int $limit = 50, ?int $paketId = null): array
 {
     $q = trim($q);
+    $paketId = $paketId !== null && $paketId > 0 ? (int)$paketId : null;
     $paidExpr = payments_void_supported()
         ? '(SELECT COALESCE(SUM(py.amount), 0) FROM payments py WHERE py.invoice_id = i.id AND py.voided_at IS NULL)'
         : '(SELECT COALESCE(SUM(py.amount), 0) FROM payments py WHERE py.invoice_id = i.id)';
     if ($q === '') {
-        $stmt = db()->prepare('
+        $sql = '
             SELECT
               i.id, i.nomor, i.tanggal, i.status, i.grand_total,
               CASE WHEN i.client_id IS NULL THEN "jamaah" ELSE "client" END AS target_type,
@@ -43,16 +44,23 @@ function invoice_search(string $q, int $limit = 50): array
             LEFT JOIN jamaah j ON j.id = i.jamaah_id
             LEFT JOIN clients c ON c.id = i.client_id
             LEFT JOIN paket p ON p.id = i.paket_id
-            ORDER BY i.id DESC
-            LIMIT :limit
-        ');
+            WHERE i.client_id IS NULL
+        ';
+        if ($paketId !== null) {
+            $sql .= ' AND i.paket_id = :paket_id ';
+        }
+        $sql .= ' ORDER BY i.id DESC LIMIT :limit ';
+        $stmt = db()->prepare($sql);
+        if ($paketId !== null) {
+            $stmt->bindValue('paket_id', $paketId, PDO::PARAM_INT);
+        }
         $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
     $like = '%' . $q . '%';
-    $stmt = db()->prepare('
+    $sql = '
         SELECT
           i.id, i.nomor, i.tanggal, i.status, i.grand_total,
           CASE WHEN i.client_id IS NULL THEN "jamaah" ELSE "client" END AS target_type,
@@ -63,7 +71,7 @@ function invoice_search(string $q, int $limit = 50): array
         LEFT JOIN jamaah j ON j.id = i.jamaah_id
         LEFT JOIN clients c ON c.id = i.client_id
         LEFT JOIN paket p ON p.id = i.paket_id
-        WHERE
+        WHERE i.client_id IS NULL AND (
           i.nomor LIKE :like OR
           j.nama_lengkap LIKE :like OR
           j.id_jamaah LIKE :like OR
@@ -72,10 +80,17 @@ function invoice_search(string $q, int $limit = 50): array
           c.nama_pic LIKE :like OR
           c.no_tlp LIKE :like OR
           c.email LIKE :like
-        ORDER BY i.id DESC
-        LIMIT :limit
-    ');
+        )
+    ';
+    if ($paketId !== null) {
+        $sql .= ' AND i.paket_id = :paket_id ';
+    }
+    $sql .= ' ORDER BY i.id DESC LIMIT :limit ';
+    $stmt = db()->prepare($sql);
     $stmt->bindValue('like', $like, PDO::PARAM_STR);
+    if ($paketId !== null) {
+        $stmt->bindValue('paket_id', $paketId, PDO::PARAM_INT);
+    }
     $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
     $stmt->execute();
     return $stmt->fetchAll();

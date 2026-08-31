@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS jamaah (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   id_jamaah VARCHAR(20) NOT NULL,
   nomor_pendaftaran VARCHAR(40) NOT NULL,
+  paket_id BIGINT UNSIGNED NULL,
 
   nama_lengkap VARCHAR(150) NOT NULL,
   nama_bapak_kandung VARCHAR(150) NOT NULL,
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS jamaah (
   UNIQUE KEY uq_jamaah_id_jamaah (id_jamaah),
   UNIQUE KEY uq_jamaah_nomor_pendaftaran (nomor_pendaftaran),
   UNIQUE KEY uq_jamaah_nik (nik),
+  KEY idx_jamaah_paket (paket_id),
   KEY idx_jamaah_nama (nama_lengkap),
   KEY idx_jamaah_hp (hp)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -55,4 +57,3 @@ INSERT INTO settings (`key`, `value`) VALUES
   ('pendaftaran.seq_length', '5'),
   ('pendaftaran.reset_policy', 'yearly')
 ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), updated_at = CURRENT_TIMESTAMP;
-

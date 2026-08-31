@@ -1,30 +1,23 @@
+<?php
+
+declare(strict_types=1);
+
+$rows = [];
+try {
+    $rows = jamaah_search_unassigned((string)($_GET['q'] ?? ''), 500);
+} catch (Throwable $e) {
+    $rows = [];
+}
+
+?>
 <section class="card">
   <div class="toolbar">
     <div class="toolbar-left">
-      <a class="btn primary" href="<?= h(app_url('/?page=jamaah_create')) ?>">Tambah Jamaah</a>
-      <a class="btn" href="<?= h(app_url('/?page=jamaah_import')) ?>">Import CSV</a>
-      <a class="btn" href="<?= h(app_url('/?page=jamaah_unassigned')) ?>">Jamaah Tanpa Paket</a>
+      <a class="btn" href="<?= h(app_url('/?page=jamaah')) ?>">Kembali</a>
     </div>
     <div class="toolbar-right">
       <form method="get" action="<?= h(app_url('/')) ?>" style="display:flex;gap:8px;align-items:center">
-        <input type="hidden" name="page" value="jamaah" />
-        <?php
-        $paketRows = [];
-        try {
-            $paketRows = paket_search('', 200);
-        } catch (Throwable $e) {
-            $paketRows = [];
-        }
-        $paketId = (int)($_GET['paket_id'] ?? 0);
-        ?>
-        <select class="input" name="paket_id" required style="width:260px">
-          <option value="">Pilih paket dulu...</option>
-          <?php foreach ($paketRows as $p): ?>
-            <option value="<?= (int)$p['id'] ?>" <?= $paketId === (int)$p['id'] ? 'selected' : '' ?>>
-              <?= h((string)$p['nama']) ?><?= $p['kode'] ? ' • ' . h((string)$p['kode']) : '' ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
+        <input type="hidden" name="page" value="jamaah_unassigned" />
         <input class="input" style="width:260px" type="text" name="q" value="<?= h((string)($_GET['q'] ?? '')) ?>" placeholder="Cari: nama / ID / no daftar / HP / NIK" aria-label="Cari jamaah" />
         <button class="btn" type="submit">Cari</button>
       </form>
@@ -33,25 +26,16 @@
 
   <div class="hr"></div>
 
-  <?php
-  $rows = [];
-  try {
-      if ($paketId > 0) {
-          $rows = jamaah_search((string)($_GET['q'] ?? ''), 500, $paketId);
-      } else {
-          $rows = [];
-      }
-  } catch (Throwable $e) {
-      $rows = [];
-  }
-  ?>
+  <div class="card-title">Jamaah Tanpa Paket</div>
+  <div class="card-subtitle">Isi paket via Edit Jamaah agar masuk ke daftar per paket</div>
+
+  <div class="hr"></div>
 
   <table class="table">
     <thead>
       <tr>
         <th style="width:70px">No</th>
         <th>Jamaah</th>
-        <th>Paket</th>
         <th>Kontak</th>
         <th>Status</th>
         <th style="width:120px">Aksi</th>
@@ -60,7 +44,7 @@
     <tbody>
       <?php if (!$rows): ?>
         <tr>
-          <td colspan="6" class="muted"><?= $paketId > 0 ? 'Belum ada data jamaah untuk paket ini.' : 'Pilih paket dulu untuk melihat daftar jamaah.' ?></td>
+          <td colspan="5" class="muted">Tidak ada jamaah tanpa paket.</td>
         </tr>
       <?php endif; ?>
       <?php $no = 0; ?>
@@ -74,7 +58,6 @@
               ID <?= h((string)$r['id_jamaah']) ?> • Daftar <?= h((string)$r['nomor_pendaftaran']) ?> • NIK <?= h((string)$r['nik']) ?>
             </div>
           </td>
-          <td><?= h((string)($r['paket_nama'] ?? '—')) ?></td>
           <td>
             <div class="mono"><?= h((string)$r['hp']) ?></div>
             <div class="sub"><?= $r['email'] ? h((string)$r['email']) : '—' ?></div>
@@ -86,14 +69,12 @@
               <span class="badge muted"><?= h((string)$r['status']) ?></span>
             <?php endif; ?>
           </td>
-          <td><a class="btn" href="<?= h(app_url('/?page=jamaah_detail&id=' . (int)$r['id'])) ?>">Detail</a></td>
+          <td><a class="btn" href="<?= h(app_url('/?page=jamaah_edit&id=' . (int)$r['id'])) ?>">Edit</a></td>
         </tr>
       <?php endforeach; ?>
     </tbody>
   </table>
 
-  <?php if ($paketId > 0): ?>
-    <div class="hr"></div>
-    <div class="muted">Total jamaah paket ini: <span class="mono"><?= (int)count($rows) ?></span></div>
-  <?php endif; ?>
+  <div class="hr"></div>
+  <div class="muted">Total jamaah tanpa paket: <span class="mono"><?= (int)count($rows) ?></span></div>
 </section>

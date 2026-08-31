@@ -12,6 +12,13 @@ if ($id > 0) {
     }
 }
 
+$paketRows = [];
+try {
+    $paketRows = paket_search('', 200);
+} catch (Throwable $e) {
+    $paketRows = [];
+}
+
 ?>
 <section class="card">
   <div class="card-header">
@@ -41,6 +48,18 @@ if ($id > 0) {
         <div class="label">Nomor Pendaftaran</div>
         <input class="input mono" value="<?= h((string)$jamaah['nomor_pendaftaran']) ?>" readonly />
       </div>
+    </div>
+
+    <div class="field" style="margin-top:10px">
+      <div class="label">Paket</div>
+      <select class="input" name="paket_id" required>
+        <option value="">Pilih paket...</option>
+        <?php foreach ($paketRows as $p): ?>
+          <option value="<?= (int)$p['id'] ?>" <?= (int)($jamaah['paket_id'] ?? 0) === (int)$p['id'] ? 'selected' : '' ?>>
+            <?= h((string)$p['nama']) ?><?= $p['kode'] ? ' • ' . h((string)$p['kode']) : '' ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
     </div>
 
     <div class="hr"></div>

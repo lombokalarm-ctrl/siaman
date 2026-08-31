@@ -1170,6 +1170,56 @@ if ($action === 'invoice.update') {
     redirect(app_url('/?page=invoice_detail&id=' . $id));
 }
 
+if ($action === 'invoice.share.whatsapp') {
+    csrf_verify_or_abort();
+    auth_require();
+
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) {
+        flash_set('error', 'ID invoice tidak valid.');
+        redirect(app_url('/?page=invoice'));
+    }
+
+    try {
+        $invoice = invoice_find($id);
+    } catch (Throwable $e) {
+        $invoice = null;
+    }
+    if (!$invoice) {
+        flash_set('error', 'Invoice tidak ditemukan.');
+        redirect(app_url('/?page=invoice'));
+    }
+
+    try {
+        $share = invoice_share_token_ensure($id, 7);
+    } catch (Throwable $e) {
+        flash_set('error', 'Gagal membuat link share.');
+        redirect(app_url('/?page=invoice_detail&id=' . $id));
+    }
+
+    $nama = (string)($invoice['target_nama'] ?? '');
+    $paketNama = (string)($invoice['paket_nama'] ?? '');
+    if ($paketNama === '') {
+        $paketNama = '—';
+    }
+    $bankAccounts = [];
+    try {
+        $bankAccounts = bank_accounts_all();
+    } catch (Throwable $e) {
+        $bankAccounts = [];
+    }
+    $rekeningLines = [];
+    foreach ($bankAccounts as $ba) {
+        $rekeningLines[] = '- ' . (string)$ba['bank_nama'] . ' ' . (string)$ba['no_rekening'] . ' a/n ' . (string)$ba['nama_rekening'];
+    }
+    $rekeningText = $rekeningLines ? ("\n\nRekening:\n" . implode("\n", $rekeningLines)) : '';
+
+    $invoiceLink = app_absolute_url('/?page=invoice_print&id=' . $id . '&token=' . (string)$share['token']);
+    $msg = 'Assalamualaikum ' . $nama . ', berikut ini update invoice untuk keberangkatan umrah ' . $paketNama . ' silakan lakukan pembayaran invoice anda melalui nomer rekening PT. Amantubillahi Karya Barokah. Terima kasih.' . "\n\nLink invoice:\n" . $invoiceLink . $rekeningText;
+    $waUrl = 'https://wa.me/?text=' . rawurlencode($msg);
+    redirect($waUrl);
+}
+
 if ($action === 'invoice.delete') {
     csrf_verify_or_abort();
     auth_require_admin();

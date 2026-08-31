@@ -73,6 +73,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== '') {
     require __DIR__ . '/routes/post.php';
 }
 
+$sharePrintPages = ['invoice_print' => true, 'invoice_pdf' => true];
+if (isset($sharePrintPages[$pageKey])) {
+    $id = (int)($_GET['id'] ?? 0);
+    $token = (string)($_GET['token'] ?? '');
+    if ($id > 0 && $token !== '' && invoice_share_token_is_valid($id, $token)) {
+        require $pages[$pageKey]['view'];
+        exit;
+    }
+}
+
 $isLoginPage = ($pageKey === 'login');
 auth_bootstrap();
 if (!$isLoginPage) {

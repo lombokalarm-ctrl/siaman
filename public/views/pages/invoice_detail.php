@@ -7,7 +7,7 @@
       $voidSupported = false;
       $canVoid = false;
       $canPaymentCreate = auth_can_do_action('payment.create');
-      $waUrl = '';
+      $canShareWa = auth_can_do_action('invoice.share.whatsapp');
       if ($id > 0) {
           try {
               $invoice = invoice_find($id);
@@ -17,28 +17,6 @@
       }
       $voidSupported = payments_void_supported();
       $canVoid = $voidSupported && auth_can_access_page('payment_void');
-      if ($invoice) {
-          $nama = (string)($invoice['target_nama'] ?? '');
-          $paketNama = (string)($invoice['paket_nama'] ?? '');
-          if ($paketNama === '') {
-              $paketNama = '—';
-          }
-          $bankAccounts = [];
-          try {
-              $bankAccounts = bank_accounts_all();
-          } catch (Throwable $e) {
-              $bankAccounts = [];
-          }
-          $rekeningLines = [];
-          foreach ($bankAccounts as $ba) {
-              $rekeningLines[] = '- ' . (string)$ba['bank_nama'] . ' ' . (string)$ba['no_rekening'] . ' a/n ' . (string)$ba['nama_rekening'];
-          }
-          $rekeningText = $rekeningLines ? ("\n\nRekening:\n" . implode("\n", $rekeningLines)) : '';
-
-          $invoiceLink = app_absolute_url('/?page=invoice_print&id=' . (int)$invoice['id']);
-          $msg = 'Assalamualaikum ' . $nama . ', berikut ini update invoice untuk keberangkatan umrah ' . $paketNama . ' silakan lakukan pembayaran invoice anda melalui nomer rekening PT. Amantubillahi Karya Barokah. Terima kasih.' . "\n\nLink invoice:\n" . $invoiceLink . $rekeningText;
-          $waUrl = 'https://wa.me/?text=' . rawurlencode($msg);
-      }
       ?>
       <div>
         <div class="card-title">Invoice <span class="mono"><?= $invoice ? h((string)$invoice['nomor']) : '—' ?></span></div>
@@ -60,7 +38,14 @@
         <?php if ($invoice): ?>
           <a class="btn" href="<?= h(app_url('/?page=invoice_print&id=' . (int)$invoice['id'])) ?>" target="_blank" rel="noopener">Cetak / PDF</a>
           <a class="btn" href="<?= h(app_url('/?page=invoice_pdf&id=' . (int)$invoice['id'])) ?>" target="_blank" rel="noopener">PDF (dompdf)</a>
-          <a class="btn" href="<?= h($waUrl) ?>" target="_blank" rel="noopener">Share WhatsApp</a>
+          <?php if ($canShareWa): ?>
+            <form method="post" action="<?= h(app_url('/?page=invoice_detail&id=' . (int)$invoice['id'])) ?>" target="_blank" style="display:inline-flex">
+              <?= csrf_input() ?>
+              <input type="hidden" name="_action" value="invoice.share.whatsapp" />
+              <input type="hidden" name="id" value="<?= (int)$invoice['id'] ?>" />
+              <button class="btn" type="submit">Share WhatsApp</button>
+            </form>
+          <?php endif; ?>
           <?php if (auth_is_admin()): ?>
             <a class="btn" href="<?= h(app_url('/?page=invoice_edit&id=' . (int)$invoice['id'])) ?>">Edit</a>
             <form method="post" action="<?= h(app_url('/?page=invoice_detail&id=' . (int)$invoice['id'])) ?>" onsubmit="return confirm('Hapus invoice ini? Pembayaran & item akan ikut terhapus.');">

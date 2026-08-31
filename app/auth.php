@@ -200,6 +200,7 @@ function auth_can_do_action(string $action): bool
     if ($role === 'keuangan') {
         return in_array($action, [
             'payment.create',
+            'invoice.share.whatsapp',
         ], true);
     }
 

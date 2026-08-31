@@ -152,6 +152,83 @@ function invoice_find(int $id): ?array
     return $inv;
 }
 
+function invoice_share_token_ensure(int $invoiceId, int $ttlDays = 7): array
+{
+    if ($invoiceId <= 0) {
+        throw new RuntimeException('ID tidak valid.');
+    }
+    $ttlDays = max(1, min(365, $ttlDays));
+
+    $pdo = db();
+    $stmt = $pdo->prepare('SELECT share_token, share_expires_at FROM invoices WHERE id = :id LIMIT 1');
+    $stmt->execute(['id' => $invoiceId]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        throw new RuntimeException('Invoice tidak ditemukan.');
+    }
+
+    $now = new DateTimeImmutable('now');
+    $token = (string)($row['share_token'] ?? '');
+    $expiresAtRaw = (string)($row['share_expires_at'] ?? '');
+    $expiresAt = null;
+    if ($expiresAtRaw !== '') {
+        try {
+            $expiresAt = new DateTimeImmutable($expiresAtRaw);
+        } catch (Throwable $e) {
+            $expiresAt = null;
+        }
+    }
+    $isExpired = $expiresAt ? ($expiresAt < $now) : true;
+
+    if ($token === '' || strlen($token) < 32 || $isExpired) {
+        $token = bin2hex(random_bytes(32));
+        $newExpires = $now->modify('+' . $ttlDays . ' days');
+        $upd = $pdo->prepare('UPDATE invoices SET share_token = :token, share_expires_at = :exp, updated_at = CURRENT_TIMESTAMP WHERE id = :id LIMIT 1');
+        $upd->execute([
+            'token' => $token,
+            'exp' => $newExpires->format('Y-m-d H:i:s'),
+            'id' => $invoiceId,
+        ]);
+        return ['token' => $token, 'expires_at' => $newExpires->format('Y-m-d H:i:s')];
+    }
+
+    return ['token' => $token, 'expires_at' => $expiresAt ? $expiresAt->format('Y-m-d H:i:s') : null];
+}
+
+function invoice_share_token_is_valid(int $invoiceId, string $token): bool
+{
+    if ($invoiceId <= 0) {
+        return false;
+    }
+    $token = trim($token);
+    if ($token === '') {
+        return false;
+    }
+    $stmt = db()->prepare('SELECT share_token, share_expires_at FROM invoices WHERE id = :id LIMIT 1');
+    $stmt->execute(['id' => $invoiceId]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        return false;
+    }
+
+    $stored = (string)($row['share_token'] ?? '');
+    if ($stored === '' || !hash_equals($stored, $token)) {
+        return false;
+    }
+
+    $expRaw = (string)($row['share_expires_at'] ?? '');
+    if ($expRaw === '') {
+        return true;
+    }
+    try {
+        $exp = new DateTimeImmutable($expRaw);
+    } catch (Throwable $e) {
+        return false;
+    }
+    $now = new DateTimeImmutable('now');
+    return $exp >= $now;
+}
+
 function invoice_create(array $data): int
 {
     $pdo = db();

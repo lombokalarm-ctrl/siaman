@@ -73,6 +73,7 @@
           <td style="display:flex;gap:8px;justify-content:flex-end">
             <a class="btn" href="<?= h(app_url('/?page=invoice_detail&id=' . (int)$r['id'])) ?>">Detail</a>
             <?php if (auth_is_admin()): ?>
+              <a class="btn" href="<?= h(app_url('/?page=invoice_edit&id=' . (int)$r['id'])) ?>">Edit</a>
               <form method="post" action="<?= h(app_url('/?page=invoice')) ?>" onsubmit="return confirm('Hapus invoice ini? Pembayaran & item akan ikut terhapus.');">
                 <?= csrf_input() ?>
                 <input type="hidden" name="_action" value="invoice.delete" />

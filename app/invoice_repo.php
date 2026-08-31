@@ -219,6 +219,111 @@ function invoice_delete(int $invoiceId): void
     $stmt->execute(['id' => $invoiceId]);
 }
 
+function invoice_paid_total(int $invoiceId): float
+{
+    if ($invoiceId <= 0) {
+        return 0.0;
+    }
+    $pdo = db();
+    if (payments_void_supported()) {
+        $stmt = $pdo->prepare('SELECT COALESCE(SUM(amount), 0) AS paid_total FROM payments WHERE invoice_id = :id AND voided_at IS NULL');
+    } else {
+        $stmt = $pdo->prepare('SELECT COALESCE(SUM(amount), 0) AS paid_total FROM payments WHERE invoice_id = :id');
+    }
+    $stmt->execute(['id' => $invoiceId]);
+    $row = $stmt->fetch();
+    return $row ? (float)$row['paid_total'] : 0.0;
+}
+
+function invoice_update(int $invoiceId, array $data): void
+{
+    if ($invoiceId <= 0) {
+        throw new RuntimeException('ID tidak valid.');
+    }
+
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare('SELECT * FROM invoices WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $invoiceId]);
+        $existing = $stmt->fetch();
+        if (!$existing) {
+            throw new RuntimeException('Invoice tidak ditemukan.');
+        }
+
+        $isClient = isset($existing['client_id']) && $existing['client_id'] !== null;
+        $paketId = $data['paket_id'] ? (int)$data['paket_id'] : null;
+        if ($isClient) {
+            $paketId = null;
+        }
+
+        $tanggal = (string)$data['tanggal'];
+        $notes = $data['notes'] !== '' ? (string)$data['notes'] : null;
+        $items = $data['items'];
+
+        $subtotal = 0.0;
+        foreach ($items as $it) {
+            $subtotal += (float)$it['total'];
+        }
+
+        $diskon = (float)$data['diskon'];
+        $pajak = (float)$data['pajak'];
+        $grandTotal = max(0, $subtotal - $diskon + $pajak);
+
+        $paidTotal = invoice_paid_total($invoiceId);
+        if ($grandTotal + 0.00001 < $paidTotal) {
+            throw new RuntimeException('Total invoice tidak boleh lebih kecil dari total pembayaran yang sudah masuk.');
+        }
+
+        $upd = $pdo->prepare('
+            UPDATE invoices
+            SET paket_id = :paket_id,
+                tanggal = :tanggal,
+                subtotal = :subtotal,
+                diskon = :diskon,
+                pajak = :pajak,
+                grand_total = :grand_total,
+                notes = :notes,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = :id
+            LIMIT 1
+        ');
+        $upd->execute([
+            'paket_id' => $paketId,
+            'tanggal' => $tanggal,
+            'subtotal' => $subtotal,
+            'diskon' => $diskon,
+            'pajak' => $pajak,
+            'grand_total' => $grandTotal,
+            'notes' => $notes,
+            'id' => $invoiceId,
+        ]);
+
+        $pdo->prepare('DELETE FROM invoice_items WHERE invoice_id = :id')->execute(['id' => $invoiceId]);
+
+        $itemStmt = $pdo->prepare('
+            INSERT INTO invoice_items (invoice_id, label, qty, price, total)
+            VALUES (:invoice_id, :label, :qty, :price, :total)
+        ');
+        foreach ($items as $it) {
+            $itemStmt->execute([
+                'invoice_id' => $invoiceId,
+                'label' => (string)$it['label'],
+                'qty' => (float)$it['qty'],
+                'price' => (float)$it['price'],
+                'total' => (float)$it['total'],
+            ]);
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+
+    invoice_recalc_status($invoiceId);
+}
+
 function invoice_recalc_status(int $invoiceId): void
 {
     $pdo = db();

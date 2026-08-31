@@ -959,6 +959,171 @@ if ($action === 'invoice.create') {
     redirect(app_url('/?page=invoice_detail&id=' . $newId));
 }
 
+if ($action === 'invoice.update') {
+    csrf_verify_or_abort();
+    auth_require_admin();
+
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) {
+        flash_set('error', 'ID invoice tidak valid.');
+        redirect(app_url('/?page=invoice'));
+    }
+
+    try {
+        $existing = invoice_find($id);
+    } catch (Throwable $e) {
+        $existing = null;
+    }
+    if (!$existing) {
+        flash_set('error', 'Invoice tidak ditemukan.');
+        redirect(app_url('/?page=invoice'));
+    }
+
+    $isClient = (string)($existing['target_type'] ?? '') === 'client';
+    $paketId = (int)($_POST['paket_id'] ?? 0);
+    $tanggal = trim((string)($_POST['tanggal'] ?? ''));
+    $notes = trim((string)($_POST['notes'] ?? ''));
+
+    $itemLabels = $_POST['item_label'] ?? [];
+    $itemQtys = $_POST['item_qty'] ?? [];
+    $itemPrices = $_POST['item_price'] ?? [];
+    $diskon = trim((string)($_POST['diskon'] ?? '0'));
+    $pajak = trim((string)($_POST['pajak'] ?? '0'));
+
+    $errors = [];
+    if ($tanggal === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) $errors[] = 'Tanggal wajib format YYYY-MM-DD.';
+    if (!preg_match('/^\d+(\.\d{1,2})?$/', $diskon)) $errors[] = 'Diskon harus angka.';
+    if (!preg_match('/^\d+(\.\d{1,2})?$/', $pajak)) $errors[] = 'Pajak harus angka.';
+
+    $newPaket = null;
+    if (!$isClient && $paketId > 0) {
+        try {
+            $newPaket = paket_find($paketId);
+        } catch (Throwable $e) {
+            $newPaket = null;
+        }
+        if (!$newPaket) {
+            $errors[] = 'Paket tidak ditemukan.';
+        }
+    }
+
+    if ($errors) {
+        flash_set('error', implode(' ', $errors));
+        redirect(app_url('/?page=invoice_edit&id=' . $id));
+    }
+
+    $items = [];
+    if (!is_array($itemLabels) || !is_array($itemQtys) || !is_array($itemPrices)) {
+        flash_set('error', 'Item invoice tidak valid.');
+        redirect(app_url('/?page=invoice_edit&id=' . $id));
+    }
+
+    $max = max(count($itemLabels), count($itemQtys), count($itemPrices));
+    for ($i = 0; $i < $max; $i++) {
+        $label = trim((string)($itemLabels[$i] ?? ''));
+        $qtyRaw = trim((string)($itemQtys[$i] ?? ''));
+        $priceRaw = trim((string)($itemPrices[$i] ?? ''));
+
+        if ($label === '' && $qtyRaw === '' && $priceRaw === '') {
+            continue;
+        }
+
+        if ($label === '') {
+            $errors[] = 'Label item wajib diisi.';
+            continue;
+        }
+        if (!preg_match('/^\d+(\.\d{1,2})?$/', $qtyRaw)) {
+            $errors[] = 'Qty item harus angka.';
+            continue;
+        }
+        if (!preg_match('/^\d+(\.\d{1,2})?$/', $priceRaw)) {
+            $errors[] = 'Harga item harus angka.';
+            continue;
+        }
+
+        $qty = (float)$qtyRaw;
+        $price = (float)$priceRaw;
+        $items[] = [
+            'label' => $label,
+            'qty' => $qty,
+            'price' => $price,
+            'total' => $qty * $price,
+        ];
+    }
+
+    $oldPaket = null;
+    $oldPaketId = (int)($existing['paket_id'] ?? 0);
+    if (!$isClient && $oldPaketId > 0) {
+        try {
+            $oldPaket = paket_find($oldPaketId);
+        } catch (Throwable $e) {
+            $oldPaket = null;
+        }
+    }
+
+    if ($oldPaket && (!$newPaket || (int)$oldPaket['id'] !== (int)$newPaket['id'])) {
+        $oldLabel = (string)$oldPaket['nama'];
+        $oldPrice = (float)$oldPaket['harga'];
+        $items = array_values(array_filter($items, function ($it) use ($oldLabel, $oldPrice) {
+            return !(
+                (string)$it['label'] === $oldLabel &&
+                abs(((float)$it['qty']) - 1.0) < 0.00001 &&
+                abs(((float)$it['price']) - $oldPrice) < 0.00001
+            );
+        }));
+    }
+
+    if ($newPaket) {
+        $paketLabel = (string)$newPaket['nama'];
+        $paketPrice = (float)$newPaket['harga'];
+        $hasPaketItem = false;
+        foreach ($items as $it) {
+            if (
+                (string)$it['label'] === $paketLabel &&
+                abs(((float)$it['qty']) - 1.0) < 0.00001 &&
+                abs(((float)$it['price']) - $paketPrice) < 0.00001
+            ) {
+                $hasPaketItem = true;
+                break;
+            }
+        }
+        if (!$hasPaketItem) {
+            array_unshift($items, [
+                'label' => $paketLabel,
+                'qty' => 1.0,
+                'price' => $paketPrice,
+                'total' => $paketPrice,
+            ]);
+        }
+    }
+
+    if (!$items) {
+        $errors[] = 'Minimal 1 item invoice harus diisi.';
+    }
+
+    if ($errors) {
+        flash_set('error', implode(' ', $errors));
+        redirect(app_url('/?page=invoice_edit&id=' . $id));
+    }
+
+    try {
+        invoice_update($id, [
+            'paket_id' => $newPaket ? (int)$newPaket['id'] : null,
+            'tanggal' => $tanggal,
+            'notes' => $notes,
+            'items' => $items,
+            'diskon' => (float)$diskon,
+            'pajak' => (float)$pajak,
+        ]);
+    } catch (Throwable $e) {
+        flash_set('error', $e instanceof RuntimeException ? $e->getMessage() : 'Gagal mengupdate invoice.');
+        redirect(app_url('/?page=invoice_edit&id=' . $id));
+    }
+
+    flash_set('success', 'Invoice berhasil diupdate.');
+    redirect(app_url('/?page=invoice_detail&id=' . $id));
+}
+
 if ($action === 'invoice.delete') {
     csrf_verify_or_abort();
     auth_require_admin();

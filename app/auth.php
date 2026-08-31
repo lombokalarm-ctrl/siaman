@@ -148,6 +148,12 @@ function auth_can_access_page(string $pageKey): bool
     if (!auth_is_logged_in()) {
         return false;
     }
+    if (auth_is_admin()) {
+        return true;
+    }
+    if (auth_is_staff()) {
+        return $pageKey !== 'invoice_edit';
+    }
     if (auth_is_admin_or_staff()) {
         return true;
     }
@@ -187,7 +193,7 @@ function auth_can_do_action(string $action): bool
         return true;
     }
     if (auth_is_staff()) {
-        return $action !== 'invoice.delete';
+        return !in_array($action, ['invoice.delete', 'invoice.update'], true);
     }
 
     $role = auth_role();

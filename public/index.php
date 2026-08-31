@@ -39,6 +39,7 @@ $pages = [
     'invoice' => ['title' => 'Invoice', 'view' => __DIR__ . '/views/pages/invoice_list.php'],
     'invoice_detail' => ['title' => 'Detail Invoice', 'view' => __DIR__ . '/views/pages/invoice_detail.php'],
     'invoice_create' => ['title' => 'Buat Invoice', 'view' => __DIR__ . '/views/pages/invoice_form.php'],
+    'invoice_edit' => ['title' => 'Edit Invoice', 'view' => __DIR__ . '/views/pages/invoice_edit.php'],
     'invoice_print' => ['title' => 'Invoice', 'view' => __DIR__ . '/views/pages/invoice_print.php'],
     'invoice_pdf' => ['title' => 'Invoice PDF', 'view' => __DIR__ . '/views/pages/invoice_pdf.php'],
     'kuitansi' => ['title' => 'Kuitansi', 'view' => __DIR__ . '/views/pages/kuitansi.php'],

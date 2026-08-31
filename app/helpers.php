@@ -30,6 +30,21 @@ function app_url(string $path = '/'): string
     return $base . $path;
 }
 
+function app_origin(): string
+{
+    $proto = strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+    $https = (string)($_SERVER['HTTPS'] ?? '');
+    $isHttps = $proto === 'https' || ($https !== '' && $https !== 'off' && $https !== '0');
+    $scheme = $isHttps ? 'https' : 'http';
+    $host = (string)($_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? 'localhost'));
+    return $scheme . '://' . $host;
+}
+
+function app_absolute_url(string $path = '/'): string
+{
+    return app_origin() . app_url($path);
+}
+
 function redirect(string $to): never
 {
     header('Location: ' . $to);

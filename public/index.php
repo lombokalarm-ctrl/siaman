@@ -25,6 +25,9 @@ $pages = [
     'jamaah' => ['title' => 'Jamaah', 'view' => __DIR__ . '/views/pages/jamaah_list.php'],
     'jamaah_unassigned' => ['title' => 'Jamaah Tanpa Paket', 'view' => __DIR__ . '/views/pages/jamaah_unassigned.php'],
     'jamaah_import' => ['title' => 'Import Jamaah', 'view' => __DIR__ . '/views/pages/jamaah_import.php'],
+    'manifest' => ['title' => 'Manifest', 'view' => __DIR__ . '/views/pages/manifest.php'],
+    'manifest_pdf' => ['title' => 'Manifest PDF', 'view' => __DIR__ . '/views/pages/manifest_pdf.php'],
+    'manifest_csv' => ['title' => 'Manifest CSV', 'view' => __DIR__ . '/views/pages/manifest_csv.php'],
     'login' => ['title' => 'Login', 'view' => __DIR__ . '/views/pages/login.php'],
     'clients' => ['title' => 'Klien', 'view' => __DIR__ . '/views/pages/client_list.php'],
     'client_create' => ['title' => 'Tambah Klien', 'view' => __DIR__ . '/views/pages/client_form.php'],
@@ -94,7 +97,7 @@ if (!auth_can_access_page($pageKey)) {
     exit;
 }
 
-$printPages = ['invoice_print' => true, 'kuitansi_print' => true, 'invoice_pdf' => true, 'kuitansi_pdf' => true];
+$printPages = ['invoice_print' => true, 'kuitansi_print' => true, 'invoice_pdf' => true, 'kuitansi_pdf' => true, 'manifest_pdf' => true, 'manifest_csv' => true];
 if (isset($printPages[$pageKey])) {
     require $pages[$pageKey]['view'];
     exit;

@@ -1,22 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+$paketRows = [];
+try {
+    $paketRows = paket_search('', 200);
+} catch (Throwable $e) {
+    $paketRows = [];
+}
+$paketId = (int)($_GET['paket_id'] ?? 0);
+
+?>
 <section class="card">
   <div class="toolbar">
     <div class="toolbar-left">
       <a class="btn primary" href="<?= h(app_url('/?page=jamaah_create')) ?>">Tambah Jamaah</a>
       <a class="btn" href="<?= h(app_url('/?page=jamaah_import')) ?>">Import CSV</a>
       <a class="btn" href="<?= h(app_url('/?page=jamaah_unassigned')) ?>">Jamaah Tanpa Paket</a>
+      <?php if (isset($paketId) && (int)$paketId > 0): ?>
+        <a class="btn" href="<?= h(app_url('/?page=manifest&paket_id=' . (int)$paketId)) ?>">Manifest Paket</a>
+      <?php else: ?>
+        <span class="btn" style="opacity:.6;pointer-events:none">Manifest Paket</span>
+      <?php endif; ?>
     </div>
     <div class="toolbar-right">
       <form method="get" action="<?= h(app_url('/')) ?>" style="display:flex;gap:8px;align-items:center">
         <input type="hidden" name="page" value="jamaah" />
-        <?php
-        $paketRows = [];
-        try {
-            $paketRows = paket_search('', 200);
-        } catch (Throwable $e) {
-            $paketRows = [];
-        }
-        $paketId = (int)($_GET['paket_id'] ?? 0);
-        ?>
         <select class="input" name="paket_id" required style="width:260px">
           <option value="">Pilih paket dulu...</option>
           <?php foreach ($paketRows as $p): ?>

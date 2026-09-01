@@ -124,6 +124,28 @@ function jamaah_search_unassigned(string $q, int $limit = 500): array
     return $stmt->fetchAll();
 }
 
+function jamaah_manifest_by_paket(int $paketId): array
+{
+    if ($paketId <= 0) {
+        return [];
+    }
+    $stmt = db()->prepare('
+        SELECT
+          j.nama_lengkap,
+          j.nama_bapak_kandung,
+          j.jenis_kelamin,
+          j.tanggal_lahir,
+          j.nik,
+          j.passport_no,
+          j.passport_expire_date
+        FROM jamaah j
+        WHERE j.paket_id = :paket_id
+        ORDER BY j.nama_lengkap ASC
+    ');
+    $stmt->execute(['paket_id' => $paketId]);
+    return $stmt->fetchAll();
+}
+
 function jamaah_update(int $id, array $data): void
 {
     $stmt = db()->prepare('
@@ -132,6 +154,8 @@ function jamaah_update(int $id, array $data): void
           nama_lengkap = :nama_lengkap,
           nama_bapak_kandung = :nama_bapak_kandung,
           nik = :nik,
+          passport_no = :passport_no,
+          passport_expire_date = :passport_expire_date,
           nomor_kk = :nomor_kk,
           tempat_lahir = :tempat_lahir,
           tanggal_lahir = :tanggal_lahir,
@@ -152,6 +176,8 @@ function jamaah_update(int $id, array $data): void
         'nama_lengkap' => (string)$data['nama_lengkap'],
         'nama_bapak_kandung' => (string)$data['nama_bapak_kandung'],
         'nik' => (string)$data['nik'],
+        'passport_no' => $data['passport_no'] !== '' ? (string)$data['passport_no'] : null,
+        'passport_expire_date' => $data['passport_expire_date'] !== '' ? (string)$data['passport_expire_date'] : null,
         'nomor_kk' => (string)$data['nomor_kk'],
         'tempat_lahir' => (string)$data['tempat_lahir'],
         'tanggal_lahir' => (string)$data['tanggal_lahir'],

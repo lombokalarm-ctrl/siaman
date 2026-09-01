@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS jamaah (
   nama_lengkap VARCHAR(150) NOT NULL,
   nama_bapak_kandung VARCHAR(150) NOT NULL,
   nik VARCHAR(32) NOT NULL,
+  passport_no VARCHAR(40) NULL,
+  passport_expire_date DATE NULL,
   nomor_kk VARCHAR(32) NOT NULL,
   tempat_lahir VARCHAR(80) NOT NULL,
   tanggal_lahir DATE NOT NULL,
@@ -46,6 +48,7 @@ CREATE TABLE IF NOT EXISTS jamaah (
   UNIQUE KEY uq_jamaah_nomor_pendaftaran (nomor_pendaftaran),
   UNIQUE KEY uq_jamaah_nik (nik),
   KEY idx_jamaah_paket (paket_id),
+  KEY idx_jamaah_passport_no (passport_no),
   KEY idx_jamaah_nama (nama_lengkap),
   KEY idx_jamaah_hp (hp)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -123,11 +123,11 @@
     <div class="row" style="margin-top:10px">
       <div class="field">
         <div class="label">No. Paspor</div>
-        <input class="input mono" placeholder="contoh: C1234567" />
+        <input class="input mono" value="<?= h((string)($jamaah['passport_no'] ?? '')) ?>" readonly />
       </div>
       <div class="field">
         <div class="label">Masa Berlaku</div>
-        <input class="input" placeholder="YYYY-MM-DD" />
+        <input class="input mono" value="<?= h((string)($jamaah['passport_expire_date'] ?? '')) ?>" readonly />
         <div class="help">Sesuai preferensi: bisa input manual (tanpa date picker).</div>
       </div>
     </div>

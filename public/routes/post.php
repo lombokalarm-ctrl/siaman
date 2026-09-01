@@ -213,6 +213,8 @@ if ($action === 'jamaah.create') {
     $namaLengkap = trim((string)($_POST['nama_lengkap'] ?? ''));
     $namaBapak = trim((string)($_POST['nama_bapak_kandung'] ?? ''));
     $nik = preg_replace('/\s+/', '', (string)($_POST['nik'] ?? ''));
+    $passportNo = trim((string)($_POST['passport_no'] ?? ''));
+    $passportExpire = trim((string)($_POST['passport_expire_date'] ?? ''));
     $nomorKk = preg_replace('/\s+/', '', (string)($_POST['nomor_kk'] ?? ''));
     $tempatLahir = trim((string)($_POST['tempat_lahir'] ?? ''));
     $tanggalLahir = trim((string)($_POST['tanggal_lahir'] ?? ''));
@@ -229,6 +231,7 @@ if ($action === 'jamaah.create') {
     if ($namaLengkap === '') $errors[] = 'Nama lengkap wajib diisi.';
     if ($namaBapak === '') $errors[] = 'Nama bapak kandung wajib diisi.';
     if ($nik === '') $errors[] = 'NIK wajib diisi.';
+    if ($passportExpire !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $passportExpire)) $errors[] = 'Expire paspor wajib format YYYY-MM-DD.';
     if ($nomorKk === '') $errors[] = 'Nomor KK wajib diisi.';
     if ($tempatLahir === '') $errors[] = 'Tempat lahir wajib diisi.';
     if ($tanggalLahir === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalLahir)) $errors[] = 'Tanggal lahir wajib format YYYY-MM-DD.';
@@ -268,11 +271,11 @@ if ($action === 'jamaah.create') {
         $stmt = $pdo->prepare('
             INSERT INTO jamaah (
                 id_jamaah, nomor_pendaftaran, paket_id,
-                nama_lengkap, nama_bapak_kandung, nik, nomor_kk, tempat_lahir, tanggal_lahir,
+                nama_lengkap, nama_bapak_kandung, nik, passport_no, passport_expire_date, nomor_kk, tempat_lahir, tanggal_lahir,
                 jenis_kelamin, status_pernikahan, pendidikan, pekerjaan, alamat_lengkap, hp, email, status
             ) VALUES (
                 :id_jamaah, :nomor_pendaftaran, :paket_id,
-                :nama_lengkap, :nama_bapak_kandung, :nik, :nomor_kk, :tempat_lahir, :tanggal_lahir,
+                :nama_lengkap, :nama_bapak_kandung, :nik, :passport_no, :passport_expire_date, :nomor_kk, :tempat_lahir, :tanggal_lahir,
                 :jenis_kelamin, :status_pernikahan, :pendidikan, :pekerjaan, :alamat_lengkap, :hp, :email, :status
             )
         ');
@@ -283,6 +286,8 @@ if ($action === 'jamaah.create') {
             'nama_lengkap' => $namaLengkap,
             'nama_bapak_kandung' => $namaBapak,
             'nik' => $nik,
+            'passport_no' => $passportNo !== '' ? $passportNo : null,
+            'passport_expire_date' => $passportExpire !== '' ? $passportExpire : null,
             'nomor_kk' => $nomorKk,
             'tempat_lahir' => $tempatLahir,
             'tanggal_lahir' => $tanggalLahir,
@@ -321,6 +326,8 @@ if ($action === 'jamaah.update') {
     $namaLengkap = trim((string)($_POST['nama_lengkap'] ?? ''));
     $namaBapak = trim((string)($_POST['nama_bapak_kandung'] ?? ''));
     $nik = preg_replace('/\s+/', '', (string)($_POST['nik'] ?? ''));
+    $passportNo = trim((string)($_POST['passport_no'] ?? ''));
+    $passportExpire = trim((string)($_POST['passport_expire_date'] ?? ''));
     $nomorKk = preg_replace('/\s+/', '', (string)($_POST['nomor_kk'] ?? ''));
     $tempatLahir = trim((string)($_POST['tempat_lahir'] ?? ''));
     $tanggalLahir = trim((string)($_POST['tanggal_lahir'] ?? ''));
@@ -338,6 +345,7 @@ if ($action === 'jamaah.update') {
     if ($namaLengkap === '') $errors[] = 'Nama lengkap wajib diisi.';
     if ($namaBapak === '') $errors[] = 'Nama bapak kandung wajib diisi.';
     if ($nik === '') $errors[] = 'NIK wajib diisi.';
+    if ($passportExpire !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $passportExpire)) $errors[] = 'Expire paspor wajib format YYYY-MM-DD.';
     if ($nomorKk === '') $errors[] = 'Nomor KK wajib diisi.';
     if ($tempatLahir === '') $errors[] = 'Tempat lahir wajib diisi.';
     if ($tanggalLahir === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalLahir)) $errors[] = 'Tanggal lahir wajib format YYYY-MM-DD.';
@@ -373,6 +381,8 @@ if ($action === 'jamaah.update') {
             'nama_lengkap' => $namaLengkap,
             'nama_bapak_kandung' => $namaBapak,
             'nik' => $nik,
+            'passport_no' => $passportNo,
+            'passport_expire_date' => $passportExpire,
             'nomor_kk' => $nomorKk,
             'tempat_lahir' => $tempatLahir,
             'tanggal_lahir' => $tanggalLahir,

@@ -93,6 +93,20 @@ $preview = implode($separator, $parts);
       </div>
     </div>
 
+    <div class="hr"></div>
+
+    <div class="card-title">Administrasi Paspor (opsional)</div>
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <div class="label">No. Paspor</div>
+        <input class="input mono" name="passport_no" placeholder="contoh: C1234567" />
+      </div>
+      <div class="field">
+        <div class="label">Expire Paspor</div>
+        <input class="input mono" name="passport_expire_date" placeholder="YYYY-MM-DD" />
+      </div>
+    </div>
+
     <div class="row" style="margin-top:10px">
       <div class="field">
         <div class="label">Tempat Lahir</div>

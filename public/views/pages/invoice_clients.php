@@ -1,32 +1,15 @@
 <section class="card">
   <div class="toolbar">
     <div class="toolbar-left">
-      <?php if (auth_can_access_page('invoice_create')): ?>
-        <a class="btn primary" href="<?= h(app_url('/?page=invoice_create')) ?>">Buat Invoice</a>
-      <?php endif; ?>
-      <a class="btn" href="<?= h(app_url('/?page=invoice_clients')) ?>">Invoice Klien</a>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="card-title">Invoice Klien</div>
+        <a class="btn" href="<?= h(app_url('/?page=invoice')) ?>">Invoice Jamaah</a>
+      </div>
     </div>
     <div class="toolbar-right">
       <form method="get" action="<?= h(app_url('/')) ?>" style="display:flex;gap:8px;align-items:center">
-        <input type="hidden" name="page" value="invoice" />
-        <?php
-        $paketRows = [];
-        try {
-            $paketRows = paket_search('', 200);
-        } catch (Throwable $e) {
-            $paketRows = [];
-        }
-        $paketId = (int)($_GET['paket_id'] ?? 0);
-        ?>
-        <select class="input" name="paket_id" required style="width:260px">
-          <option value="">Pilih paket dulu...</option>
-          <?php foreach ($paketRows as $p): ?>
-            <option value="<?= (int)$p['id'] ?>" <?= $paketId === (int)$p['id'] ? 'selected' : '' ?>>
-              <?= h((string)$p['nama']) ?><?= $p['kode'] ? ' • ' . h((string)$p['kode']) : '' ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-        <input class="input" style="width:260px" type="text" name="q" value="<?= h((string)($_GET['q'] ?? '')) ?>" placeholder="Cari: nomor / jamaah / id / daftar" aria-label="Cari invoice" />
+        <input type="hidden" name="page" value="invoice_clients" />
+        <input class="input" style="width:260px" type="text" name="q" value="<?= h((string)($_GET['q'] ?? '')) ?>" placeholder="Cari: nomor / perusahaan / pic" aria-label="Cari invoice klien" />
         <button class="btn" type="submit">Cari</button>
       </form>
     </div>
@@ -37,11 +20,7 @@
   <?php
   $rows = [];
   try {
-      if ($paketId > 0) {
-          $rows = invoice_search((string)($_GET['q'] ?? ''), 500, $paketId);
-      } else {
-          $rows = [];
-      }
+      $rows = invoice_search_clients((string)($_GET['q'] ?? ''));
   } catch (Throwable $e) {
       $rows = [];
   }
@@ -51,7 +30,7 @@
     <thead>
       <tr>
         <th>No Invoice</th>
-        <th>Pelanggan</th>
+        <th>Klien</th>
         <th>Status</th>
         <th>Total</th>
         <th>Sisa</th>
@@ -61,7 +40,7 @@
     <tbody>
       <?php if (!$rows): ?>
         <tr>
-          <td colspan="6" class="muted"><?= $paketId > 0 ? 'Belum ada data invoice untuk paket ini.' : 'Pilih paket dulu untuk melihat daftar invoice.' ?></td>
+          <td colspan="6" class="muted">Belum ada data invoice klien.</td>
         </tr>
       <?php endif; ?>
       <?php foreach ($rows as $r): ?>
@@ -75,11 +54,7 @@
           <td class="mono"><?= h((string)$r['nomor']) ?></td>
           <td>
             <?= h((string)$r['target_nama']) ?>
-            <div class="sub">
-              <?= (string)($r['target_type'] ?? '') === 'client' ? 'Klien' : 'Jamaah' ?>
-              •
-              <?= $r['paket_nama'] ? h((string)$r['paket_nama']) : '—' ?>
-            </div>
+            <div class="sub">Klien</div>
           </td>
           <td>
             <?php if ($status === 'paid'): ?>
@@ -96,7 +71,7 @@
             <a class="btn" href="<?= h(app_url('/?page=invoice_detail&id=' . (int)$r['id'])) ?>">Detail</a>
             <?php if (auth_is_admin()): ?>
               <a class="btn" href="<?= h(app_url('/?page=invoice_edit&id=' . (int)$r['id'])) ?>">Edit</a>
-              <form method="post" action="<?= h(app_url('/?page=invoice')) ?>" onsubmit="return confirm('Hapus invoice ini? Pembayaran & item akan ikut terhapus.');">
+              <form method="post" action="<?= h(app_url('/?page=invoice_clients')) ?>" onsubmit="return confirm('Hapus invoice ini? Pembayaran & item akan ikut terhapus.');">
                 <?= csrf_input() ?>
                 <input type="hidden" name="_action" value="invoice.delete" />
                 <input type="hidden" name="id" value="<?= (int)$r['id'] ?>" />
@@ -109,3 +84,4 @@
     </tbody>
   </table>
 </section>
+

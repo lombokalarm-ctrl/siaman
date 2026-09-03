@@ -163,6 +163,7 @@ function auth_can_access_page(string $pageKey): bool
         return in_array($pageKey, [
             'dashboard',
             'invoice',
+            'invoice_clients',
             'invoice_detail',
             'invoice_print',
             'invoice_pdf',

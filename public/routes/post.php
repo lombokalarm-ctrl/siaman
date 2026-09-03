@@ -1230,6 +1230,181 @@ if ($action === 'invoice.share.whatsapp') {
     redirect($waUrl);
 }
 
+if ($action === 'roomlist.create') {
+    csrf_verify_or_abort();
+    auth_require_admin_or_staff();
+
+    $paketId = (int)($_POST['paket_id'] ?? 0);
+    $hotelNama = trim((string)($_POST['hotel_nama'] ?? ''));
+    if ($paketId <= 0 || $hotelNama === '') {
+        flash_set('error', 'Paket dan nama hotel wajib diisi.');
+        redirect(app_url('/?page=roomlist' . ($paketId > 0 ? ('&paket_id=' . $paketId) : '')));
+    }
+
+    try {
+        $id = roomlist_create($paketId, $hotelNama);
+    } catch (Throwable $e) {
+        flash_set('error', $e instanceof RuntimeException ? $e->getMessage() : 'Gagal membuat roomlist.');
+        redirect(app_url('/?page=roomlist&paket_id=' . $paketId));
+    }
+
+    flash_set('success', 'Roomlist berhasil dibuat.');
+    redirect(app_url('/?page=roomlist_detail&id=' . $id));
+}
+
+if ($action === 'roomlist.update') {
+    csrf_verify_or_abort();
+    auth_require_admin_or_staff();
+
+    $id = (int)($_POST['id'] ?? 0);
+    $hotelNama = trim((string)($_POST['hotel_nama'] ?? ''));
+    if ($id <= 0) {
+        flash_set('error', 'ID tidak valid.');
+        redirect(app_url('/?page=roomlist'));
+    }
+    try {
+        roomlist_update($id, $hotelNama);
+    } catch (Throwable $e) {
+        flash_set('error', $e instanceof RuntimeException ? $e->getMessage() : 'Gagal update roomlist.');
+        redirect(app_url('/?page=roomlist_detail&id=' . $id));
+    }
+    flash_set('success', 'Roomlist berhasil diupdate.');
+    redirect(app_url('/?page=roomlist_detail&id=' . $id));
+}
+
+if ($action === 'roomlist.generate') {
+    csrf_verify_or_abort();
+    auth_require_admin_or_staff();
+
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) {
+        flash_set('error', 'ID tidak valid.');
+        redirect(app_url('/?page=roomlist'));
+    }
+    $rl = roomlist_find($id);
+    if (!$rl) {
+        flash_set('error', 'Roomlist tidak ditemukan.');
+        redirect(app_url('/?page=roomlist'));
+    }
+
+    $paketId = (int)$rl['paket_id'];
+    $cands = jamaah_roomlist_candidates_by_paket($paketId);
+    $male = 0;
+    $female = 0;
+    foreach ($cands as $c) {
+        $jk = strtolower((string)($c['jenis_kelamin'] ?? ''));
+        if (in_array($jk, ['laki-laki', 'laki laki', 'l'], true)) {
+            $male++;
+        } elseif (in_array($jk, ['perempuan', 'p'], true)) {
+            $female++;
+        }
+    }
+
+    try {
+        roomlist_generate_template($id, $paketId, $male, $female);
+    } catch (Throwable $e) {
+        flash_set('error', $e instanceof RuntimeException ? $e->getMessage() : 'Gagal generate template.');
+        redirect(app_url('/?page=roomlist_detail&id=' . $id));
+    }
+
+    flash_set('success', 'Template kamar berhasil dibuat (reset).');
+    redirect(app_url('/?page=roomlist_detail&id=' . $id));
+}
+
+if ($action === 'room.create') {
+    csrf_verify_or_abort();
+    auth_require_admin_or_staff();
+
+    $roomlistId = (int)($_POST['roomlist_id'] ?? 0);
+    $roomType = strtoupper(trim((string)($_POST['room_type'] ?? 'QD')));
+    $roomGender = strtolower(trim((string)($_POST['room_gender'] ?? 'mix')));
+    if ($roomlistId <= 0) {
+        flash_set('error', 'Roomlist tidak valid.');
+        redirect(app_url('/?page=roomlist'));
+    }
+
+    $cap = 4;
+    if ($roomType === 'QT') $cap = 5;
+    if ($roomType === 'TR') $cap = 3;
+    if ($roomType === 'DB') $cap = 2;
+
+    try {
+        $nextNoStmt = db()->prepare('SELECT COALESCE(MAX(room_no),0) AS m FROM rooms WHERE roomlist_id = :id');
+        $nextNoStmt->execute(['id' => $roomlistId]);
+        $row = $nextNoStmt->fetch();
+        $nextNo = (int)($row ? $row['m'] : 0) + 1;
+        room_create($roomlistId, $nextNo, $roomType, $roomGender, $cap);
+    } catch (Throwable $e) {
+        flash_set('error', $e instanceof RuntimeException ? $e->getMessage() : 'Gagal menambah kamar.');
+        redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId));
+    }
+
+    flash_set('success', 'Kamar berhasil ditambahkan.');
+    redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId));
+}
+
+if ($action === 'room.key.update') {
+    csrf_verify_or_abort();
+    auth_require_admin_or_staff();
+
+    $roomId = (int)($_POST['room_id'] ?? 0);
+    $roomlistId = (int)($_POST['roomlist_id'] ?? 0);
+    $nomorKunci = (string)($_POST['nomor_kunci'] ?? '');
+    if ($roomId <= 0 || $roomlistId <= 0) {
+        flash_set('error', 'Data tidak valid.');
+        redirect(app_url('/?page=roomlist'));
+    }
+    try {
+        room_update_key($roomId, $nomorKunci);
+    } catch (Throwable $e) {
+        flash_set('error', $e instanceof RuntimeException ? $e->getMessage() : 'Gagal update nomor kunci.');
+        redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId));
+    }
+    flash_set('success', 'Nomor kunci tersimpan.');
+    redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId));
+}
+
+if ($action === 'room.member.add') {
+    csrf_verify_or_abort();
+    auth_require_admin_or_staff();
+
+    $roomId = (int)($_POST['room_id'] ?? 0);
+    $roomlistId = (int)($_POST['roomlist_id'] ?? 0);
+    $jamaahId = (int)($_POST['jamaah_id'] ?? 0);
+    if ($roomId <= 0 || $roomlistId <= 0 || $jamaahId <= 0) {
+        flash_set('error', 'Data tidak valid.');
+        redirect(app_url('/?page=roomlist'));
+    }
+    try {
+        room_member_add($roomId, $jamaahId);
+    } catch (Throwable $e) {
+        flash_set('error', $e instanceof RuntimeException ? $e->getMessage() : 'Gagal menambah penghuni.');
+        redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId));
+    }
+    flash_set('success', 'Penghuni ditambahkan.');
+    redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId));
+}
+
+if ($action === 'room.member.remove') {
+    csrf_verify_or_abort();
+    auth_require_admin_or_staff();
+
+    $id = (int)($_POST['id'] ?? 0);
+    $roomlistId = (int)($_POST['roomlist_id'] ?? 0);
+    if ($id <= 0 || $roomlistId <= 0) {
+        flash_set('error', 'Data tidak valid.');
+        redirect(app_url('/?page=roomlist'));
+    }
+    try {
+        room_member_remove($id);
+    } catch (Throwable $e) {
+        flash_set('error', $e instanceof RuntimeException ? $e->getMessage() : 'Gagal menghapus penghuni.');
+        redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId));
+    }
+    flash_set('success', 'Penghuni dihapus.');
+    redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId));
+}
+
 if ($action === 'invoice.delete') {
     csrf_verify_or_abort();
     auth_require_admin();

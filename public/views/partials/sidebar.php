@@ -12,6 +12,9 @@ $items = [
 if (auth_can_access_page('jamaah')) {
     $items[] = ['key' => 'jamaah', 'label' => 'Jamaah', 'href' => app_url('/?page=jamaah')];
 }
+if (auth_can_access_page('roomlist')) {
+    $items[] = ['key' => 'roomlist', 'label' => 'Roomlist', 'href' => app_url('/?page=roomlist')];
+}
 if (auth_can_access_page('clients')) {
     $items[] = ['key' => 'clients', 'label' => 'Klien', 'href' => app_url('/?page=clients')];
 }
@@ -20,6 +23,9 @@ if (auth_can_access_page('paket')) {
 }
 if (auth_can_access_page('invoice')) {
     $items[] = ['key' => 'invoice', 'label' => 'Invoice', 'href' => app_url('/?page=invoice')];
+}
+if (auth_can_access_page('invoice_clients')) {
+    $items[] = ['key' => 'invoice_clients', 'label' => 'Invoice Klien', 'href' => app_url('/?page=invoice_clients')];
 }
 if (auth_can_access_page('kuitansi')) {
     $items[] = ['key' => 'kuitansi', 'label' => 'Kuitansi', 'href' => app_url('/?page=kuitansi')];

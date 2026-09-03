@@ -146,6 +146,24 @@ function jamaah_manifest_by_paket(int $paketId): array
     return $stmt->fetchAll();
 }
 
+function jamaah_roomlist_candidates_by_paket(int $paketId): array
+{
+    if ($paketId <= 0) {
+        return [];
+    }
+    $stmt = db()->prepare('
+        SELECT
+          j.id,
+          j.nama_lengkap,
+          j.jenis_kelamin
+        FROM jamaah j
+        WHERE j.paket_id = :paket_id
+        ORDER BY j.nama_lengkap ASC
+    ');
+    $stmt->execute(['paket_id' => $paketId]);
+    return $stmt->fetchAll();
+}
+
 function jamaah_update(int $id, array $data): void
 {
     $stmt = db()->prepare('

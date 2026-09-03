@@ -17,6 +17,7 @@ require __DIR__ . '/../app/jamaah_repo.php';
 require __DIR__ . '/../app/client_repo.php';
 require __DIR__ . '/../app/paket_repo.php';
 require __DIR__ . '/../app/invoice_repo.php';
+require __DIR__ . '/../app/roomlist_repo.php';
 require __DIR__ . '/../app/role_repo.php';
 require __DIR__ . '/../app/user_repo.php';
 
@@ -28,6 +29,8 @@ $pages = [
     'manifest' => ['title' => 'Manifest', 'view' => __DIR__ . '/views/pages/manifest.php'],
     'manifest_pdf' => ['title' => 'Manifest PDF', 'view' => __DIR__ . '/views/pages/manifest_pdf.php'],
     'manifest_csv' => ['title' => 'Manifest CSV', 'view' => __DIR__ . '/views/pages/manifest_csv.php'],
+    'roomlist' => ['title' => 'Roomlist', 'view' => __DIR__ . '/views/pages/roomlist.php'],
+    'roomlist_detail' => ['title' => 'Roomlist', 'view' => __DIR__ . '/views/pages/roomlist_detail.php'],
     'login' => ['title' => 'Login', 'view' => __DIR__ . '/views/pages/login.php'],
     'clients' => ['title' => 'Klien', 'view' => __DIR__ . '/views/pages/client_list.php'],
     'client_create' => ['title' => 'Tambah Klien', 'view' => __DIR__ . '/views/pages/client_form.php'],
@@ -41,6 +44,7 @@ $pages = [
     'paket_create' => ['title' => 'Tambah Paket', 'view' => __DIR__ . '/views/pages/paket_form.php'],
     'paket_edit' => ['title' => 'Edit Paket', 'view' => __DIR__ . '/views/pages/paket_edit.php'],
     'invoice' => ['title' => 'Invoice', 'view' => __DIR__ . '/views/pages/invoice_list.php'],
+    'invoice_clients' => ['title' => 'Invoice Klien', 'view' => __DIR__ . '/views/pages/invoice_clients.php'],
     'invoice_detail' => ['title' => 'Detail Invoice', 'view' => __DIR__ . '/views/pages/invoice_detail.php'],
     'invoice_create' => ['title' => 'Buat Invoice', 'view' => __DIR__ . '/views/pages/invoice_form.php'],
     'invoice_edit' => ['title' => 'Edit Invoice', 'view' => __DIR__ . '/views/pages/invoice_edit.php'],

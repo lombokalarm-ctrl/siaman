@@ -96,6 +96,60 @@ function invoice_search(string $q, int $limit = 50, ?int $paketId = null): array
     return $stmt->fetchAll();
 }
 
+function invoice_search_clients(string $q, int $limit = 50): array
+{
+    $q = trim($q);
+    $paidExpr = payments_void_supported()
+        ? '(SELECT COALESCE(SUM(py.amount), 0) FROM payments py WHERE py.invoice_id = i.id AND py.voided_at IS NULL)'
+        : '(SELECT COALESCE(SUM(py.amount), 0) FROM payments py WHERE py.invoice_id = i.id)';
+
+    if ($q === '') {
+        $sql = '
+            SELECT
+              i.id, i.nomor, i.tanggal, i.status, i.grand_total,
+              "client" AS target_type,
+              c.nama_perusahaan AS target_nama,
+              NULL AS paket_nama,
+              ' . $paidExpr . ' AS paid_total
+            FROM invoices i
+            INNER JOIN clients c ON c.id = i.client_id
+            WHERE i.client_id IS NOT NULL
+            ORDER BY i.id DESC
+            LIMIT :limit
+        ';
+        $stmt = db()->prepare($sql);
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    $like = '%' . $q . '%';
+    $sql = '
+        SELECT
+          i.id, i.nomor, i.tanggal, i.status, i.grand_total,
+          "client" AS target_type,
+          c.nama_perusahaan AS target_nama,
+          NULL AS paket_nama,
+          ' . $paidExpr . ' AS paid_total
+        FROM invoices i
+        INNER JOIN clients c ON c.id = i.client_id
+        WHERE i.client_id IS NOT NULL AND (
+          i.nomor LIKE :like OR
+          c.nama_perusahaan LIKE :like OR
+          c.nama_pic LIKE :like OR
+          c.no_tlp LIKE :like OR
+          c.email LIKE :like
+        )
+        ORDER BY i.id DESC
+        LIMIT :limit
+    ';
+    $stmt = db()->prepare($sql);
+    $stmt->bindValue('like', $like, PDO::PARAM_STR);
+    $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
 function invoice_find(int $id): ?array
 {
     $stmt = db()->prepare('

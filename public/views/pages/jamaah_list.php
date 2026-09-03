@@ -19,8 +19,10 @@ $paketId = (int)($_GET['paket_id'] ?? 0);
       <a class="btn" href="<?= h(app_url('/?page=jamaah_unassigned')) ?>">Jamaah Tanpa Paket</a>
       <?php if (isset($paketId) && (int)$paketId > 0): ?>
         <a class="btn" href="<?= h(app_url('/?page=manifest&paket_id=' . (int)$paketId)) ?>">Manifest Paket</a>
+        <a class="btn" href="<?= h(app_url('/?page=roomlist&paket_id=' . (int)$paketId)) ?>">Roomlist Paket</a>
       <?php else: ?>
         <span class="btn" style="opacity:.6;pointer-events:none">Manifest Paket</span>
+        <span class="btn" style="opacity:.6;pointer-events:none">Roomlist Paket</span>
       <?php endif; ?>
     </div>
     <div class="toolbar-right">

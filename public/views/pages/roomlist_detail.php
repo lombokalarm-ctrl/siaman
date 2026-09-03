@@ -166,6 +166,64 @@ if (!in_array($tab, ['rooms', 'setup'], true)) {
       </div>
       <button class="btn" type="submit">Tambah Kamar</button>
     </form>
+
+    <div class="hr"></div>
+
+    <div class="card-title">Hapus Kamar</div>
+    <?php if (!$rooms): ?>
+      <div class="muted">Belum ada kamar.</div>
+    <?php else: ?>
+      <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id . '&tab=setup')) ?>" onsubmit="return confirm('Hapus kamar yang dipilih? Penghuni di dalamnya ikut terhapus.');">
+        <?= csrf_input() ?>
+        <input type="hidden" name="_action" value="rooms.bulk_delete" />
+        <input type="hidden" name="roomlist_id" value="<?= (int)$id ?>" />
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px">
+          <button class="btn danger" type="submit">Hapus Terpilih</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="table" style="min-width:720px">
+            <thead>
+              <tr>
+                <th style="width:60px">Pilih</th>
+                <th>Kode</th>
+                <th>Tipe</th>
+                <th>Kategori</th>
+                <th>Kunci</th>
+                <th style="width:90px">Isi</th>
+                <th style="width:90px">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($rooms as $r): ?>
+                <?php
+                  $cnt = is_array($r['members'] ?? null) ? (int)count((array)$r['members']) : 0;
+                  $gender = (string)$r['room_gender'];
+                  $genderLabel = $gender === 'male' ? 'Laki-laki' : ($gender === 'female' ? 'Perempuan' : 'Mix');
+                ?>
+                <tr>
+                  <td><input type="checkbox" name="ids[]" value="<?= (int)$r['id'] ?>" /></td>
+                  <td class="mono"><?= h((string)$r['room_code']) ?></td>
+                  <td class="mono"><?= h((string)$r['room_type']) ?></td>
+                  <td><?= h($genderLabel) ?></td>
+                  <td class="mono"><?= $r['nomor_kunci'] ? h((string)$r['nomor_kunci']) : '—' ?></td>
+                  <td class="mono"><?= (int)$cnt ?>/<?= (int)$r['capacity'] ?></td>
+                  <td style="text-align:right">
+                    <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id . '&tab=setup')) ?>" style="display:inline" onsubmit="return confirm('Hapus kamar ini? Penghuni ikut terhapus.');">
+                      <?= csrf_input() ?>
+                      <input type="hidden" name="_action" value="room.delete" />
+                      <input type="hidden" name="roomlist_id" value="<?= (int)$id ?>" />
+                      <input type="hidden" name="room_id" value="<?= (int)$r['id'] ?>" />
+                      <input type="hidden" name="tab" value="setup" />
+                      <button class="btn danger" type="submit">Hapus</button>
+                    </form>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </form>
+    <?php endif; ?>
   <?php else: ?>
     <?php if (!$rooms): ?>
       <div class="muted">Belum ada kamar. Buka tab Setup lalu Generate Template atau tambah kamar manual.</div>
@@ -197,6 +255,14 @@ if (!in_array($tab, ['rooms', 'setup'], true)) {
                 <input class="input mono" name="nomor_kunci" value="<?= h((string)($r['nomor_kunci'] ?? '')) ?>" placeholder="mis. 1203" />
               </div>
               <button class="btn" type="submit">Simpan</button>
+            </form>
+            <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id . '&tab=rooms')) ?>" style="margin-top:8px" onsubmit="return confirm('Hapus kamar ini? Penghuni ikut terhapus.');">
+              <?= csrf_input() ?>
+              <input type="hidden" name="_action" value="room.delete" />
+              <input type="hidden" name="roomlist_id" value="<?= (int)$id ?>" />
+              <input type="hidden" name="room_id" value="<?= (int)$r['id'] ?>" />
+              <input type="hidden" name="tab" value="rooms" />
+              <button class="btn danger" type="submit" style="width:100%">Hapus Kamar</button>
             </form>
 
             <div class="hr"></div>

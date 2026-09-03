@@ -157,6 +157,41 @@ function room_update_key(int $roomId, string $nomorKunci): void
     $stmt->execute(['nomor_kunci' => $nomorKunci, 'id' => $roomId]);
 }
 
+function room_delete(int $roomlistId, int $roomId): void
+{
+    if ($roomlistId <= 0 || $roomId <= 0) {
+        throw new RuntimeException('Data tidak valid.');
+    }
+    $stmt = db()->prepare('DELETE FROM rooms WHERE id = :id AND roomlist_id = :roomlist_id LIMIT 1');
+    $stmt->execute(['id' => $roomId, 'roomlist_id' => $roomlistId]);
+    if ($stmt->rowCount() < 1) {
+        throw new RuntimeException('Kamar tidak ditemukan.');
+    }
+}
+
+function rooms_delete_bulk(int $roomlistId, array $roomIds): int
+{
+    if ($roomlistId <= 0) {
+        throw new RuntimeException('Roomlist tidak valid.');
+    }
+    $ids = [];
+    foreach ($roomIds as $rid) {
+        $rid = (int)$rid;
+        if ($rid > 0) {
+            $ids[] = $rid;
+        }
+    }
+    $ids = array_values(array_unique($ids));
+    if (!$ids) {
+        return 0;
+    }
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = db()->prepare('DELETE FROM rooms WHERE roomlist_id = ? AND id IN (' . $placeholders . ')');
+    $stmt->execute(array_merge([(int)$roomlistId], $ids));
+    return $stmt->rowCount();
+}
+
 function room_member_add(int $roomId, int $jamaahId): void
 {
     if ($roomId <= 0 || $jamaahId <= 0) {
@@ -337,4 +372,3 @@ function roomlist_generate_template(int $roomlistId, int $paketId, int $maleCoun
         throw $e;
     }
 }
-

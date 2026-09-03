@@ -1406,6 +1406,71 @@ if ($action === 'room.create') {
     redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId . '&tab=setup'));
 }
 
+if ($action === 'room.delete') {
+    csrf_verify_or_abort();
+    auth_require_admin_or_staff();
+
+    $roomlistId = (int)($_POST['roomlist_id'] ?? 0);
+    $roomId = (int)($_POST['room_id'] ?? 0);
+    $tab = (string)($_POST['tab'] ?? 'rooms');
+    if (!in_array($tab, ['rooms', 'setup'], true)) {
+        $tab = 'rooms';
+    }
+    if ($roomlistId <= 0 || $roomId <= 0) {
+        flash_set('error', 'Data tidak valid.');
+        redirect(app_url('/?page=roomlist'));
+    }
+
+    try {
+        room_delete($roomlistId, $roomId);
+    } catch (Throwable $e) {
+        flash_set('error', $e instanceof RuntimeException ? $e->getMessage() : 'Gagal menghapus kamar.');
+        redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId . '&tab=' . $tab));
+    }
+
+    flash_set('success', 'Kamar berhasil dihapus.');
+    redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId . '&tab=' . $tab));
+}
+
+if ($action === 'rooms.bulk_delete') {
+    csrf_verify_or_abort();
+    auth_require_admin_or_staff();
+
+    $roomlistId = (int)($_POST['roomlist_id'] ?? 0);
+    $ids = $_POST['ids'] ?? [];
+    if (!is_array($ids)) {
+        $ids = [];
+    }
+    $ids = array_slice($ids, 0, 50);
+    if ($roomlistId <= 0) {
+        flash_set('error', 'Roomlist tidak valid.');
+        redirect(app_url('/?page=roomlist'));
+    }
+    if (!$ids) {
+        flash_set('error', 'Pilih minimal 1 kamar.');
+        redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId . '&tab=setup'));
+    }
+
+    $deleted = 0;
+    try {
+        $pdo = db();
+        $pdo->beginTransaction();
+        try {
+            $deleted = rooms_delete_bulk($roomlistId, $ids);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    } catch (Throwable $e) {
+        flash_set('error', $e instanceof RuntimeException ? $e->getMessage() : 'Gagal menghapus kamar.');
+        redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId . '&tab=setup'));
+    }
+
+    flash_set('success', 'Kamar terhapus: ' . (int)$deleted);
+    redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId . '&tab=setup'));
+}
+
 if ($action === 'room.key.update') {
     csrf_verify_or_abort();
     auth_require_admin_or_staff();

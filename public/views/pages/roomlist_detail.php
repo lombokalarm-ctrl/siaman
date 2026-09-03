@@ -160,6 +160,10 @@ if (!in_array($tab, ['rooms', 'setup'], true)) {
           <option value="mix">Mix</option>
         </select>
       </div>
+      <div class="field">
+        <div class="label">Jumlah</div>
+        <input class="input" type="number" name="qty" value="1" min="1" max="15" required style="width:120px" />
+      </div>
       <button class="btn" type="submit">Tambah Kamar</button>
     </form>
   <?php else: ?>

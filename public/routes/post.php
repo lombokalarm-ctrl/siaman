@@ -1363,9 +1363,14 @@ if ($action === 'room.create') {
     $roomlistId = (int)($_POST['roomlist_id'] ?? 0);
     $roomType = strtoupper(trim((string)($_POST['room_type'] ?? 'QD')));
     $roomGender = strtolower(trim((string)($_POST['room_gender'] ?? 'mix')));
+    $qty = (int)($_POST['qty'] ?? 1);
     if ($roomlistId <= 0) {
         flash_set('error', 'Roomlist tidak valid.');
         redirect(app_url('/?page=roomlist'));
+    }
+    if ($qty < 1 || $qty > 15) {
+        flash_set('error', 'Jumlah kamar maksimal 15 per sekali submit.');
+        redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId . '&tab=setup'));
     }
 
     $cap = 4;
@@ -1374,18 +1379,31 @@ if ($action === 'room.create') {
     if ($roomType === 'DB') $cap = 2;
 
     try {
-        $nextNoStmt = db()->prepare('SELECT COALESCE(MAX(room_no),0) AS m FROM rooms WHERE roomlist_id = :id');
-        $nextNoStmt->execute(['id' => $roomlistId]);
-        $row = $nextNoStmt->fetch();
-        $nextNo = (int)($row ? $row['m'] : 0) + 1;
-        room_create($roomlistId, $nextNo, $roomType, $roomGender, $cap);
+        $pdo = db();
+        $pdo->beginTransaction();
+        try {
+            $nextNoStmt = $pdo->prepare('SELECT room_no FROM rooms WHERE roomlist_id = :id ORDER BY room_no DESC LIMIT 1 FOR UPDATE');
+            $nextNoStmt->execute(['id' => $roomlistId]);
+            $row = $nextNoStmt->fetch();
+            $nextNo = (int)($row ? $row['room_no'] : 0) + 1;
+
+            for ($i = 0; $i < $qty; $i++) {
+                room_create($roomlistId, $nextNo + $i, $roomType, $roomGender, $cap);
+            }
+
+            $pdo->commit();
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
     } catch (Throwable $e) {
         flash_set('error', $e instanceof RuntimeException ? $e->getMessage() : 'Gagal menambah kamar.');
-        redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId));
+        redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId . '&tab=setup'));
     }
 
-    flash_set('success', 'Kamar berhasil ditambahkan.');
-    redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId));
+    $genderLabel = $roomGender === 'male' ? 'Laki-laki' : ($roomGender === 'female' ? 'Perempuan' : 'Mix');
+    flash_set('success', 'Berhasil menambahkan ' . $qty . ' kamar ' . $roomType . ' (' . $genderLabel . ').');
+    redirect(app_url('/?page=roomlist_detail&id=' . $roomlistId . '&tab=setup'));
 }
 
 if ($action === 'room.key.update') {

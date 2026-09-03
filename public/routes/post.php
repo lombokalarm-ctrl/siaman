@@ -404,6 +404,51 @@ if ($action === 'jamaah.update') {
     redirect(app_url('/?page=jamaah_detail&id=' . $id));
 }
 
+if ($action === 'jamaah.paket.move') {
+    csrf_verify_or_abort();
+    auth_require_admin_or_staff();
+
+    $id = (int)($_POST['id'] ?? 0);
+    $paketId = (int)($_POST['paket_id'] ?? 0);
+    $returnPaketId = (int)($_POST['return_paket_id'] ?? 0);
+    $q = trim((string)($_POST['q'] ?? ''));
+
+    if ($id <= 0) {
+        flash_set('error', 'ID jamaah tidak valid.');
+        redirect(app_url('/?page=jamaah' . ($returnPaketId > 0 ? ('&paket_id=' . $returnPaketId) : '')));
+    }
+
+    $toPaketLabel = 'Tanpa Paket';
+    $toPaketId = null;
+    if ($paketId > 0) {
+        try {
+            $paket = paket_find($paketId);
+        } catch (Throwable $e) {
+            $paket = null;
+        }
+        if (!$paket) {
+            flash_set('error', 'Paket tujuan tidak ditemukan.');
+            redirect(app_url('/?page=jamaah' . ($returnPaketId > 0 ? ('&paket_id=' . $returnPaketId) : '')));
+        }
+        $toPaketId = (int)$paket['id'];
+        $toPaketLabel = (string)$paket['nama'];
+    }
+
+    try {
+        jamaah_set_paket($id, $toPaketId);
+    } catch (Throwable $e) {
+        flash_set('error', 'Gagal memindahkan jamaah.');
+        redirect(app_url('/?page=jamaah' . ($returnPaketId > 0 ? ('&paket_id=' . $returnPaketId) : '')));
+    }
+
+    flash_set('success', 'Jamaah berhasil dipindahkan ke: ' . $toPaketLabel);
+    $to = app_url('/?page=jamaah' . ($returnPaketId > 0 ? ('&paket_id=' . $returnPaketId) : ''));
+    if ($q !== '') {
+        $to .= '&q=' . rawurlencode($q);
+    }
+    redirect($to);
+}
+
 if ($action === 'jamaah.import') {
     csrf_verify_or_abort();
 

@@ -65,7 +65,7 @@ $paketId = (int)($_GET['paket_id'] ?? 0);
         <th>Paket</th>
         <th>Kontak</th>
         <th>Status</th>
-        <th style="width:120px">Aksi</th>
+        <th style="width:360px">Aksi</th>
       </tr>
     </thead>
     <tbody>
@@ -97,7 +97,25 @@ $paketId = (int)($_GET['paket_id'] ?? 0);
               <span class="badge muted"><?= h((string)$r['status']) ?></span>
             <?php endif; ?>
           </td>
-          <td><a class="btn" href="<?= h(app_url('/?page=jamaah_detail&id=' . (int)$r['id'])) ?>">Detail</a></td>
+          <td style="display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap">
+            <a class="btn" href="<?= h(app_url('/?page=jamaah_detail&id=' . (int)$r['id'])) ?>">Detail</a>
+            <form method="post" action="<?= h(app_url('/?page=jamaah&paket_id=' . $paketId)) ?>" style="display:flex;gap:8px;align-items:center">
+              <?= csrf_input() ?>
+              <input type="hidden" name="_action" value="jamaah.paket.move" />
+              <input type="hidden" name="id" value="<?= (int)$r['id'] ?>" />
+              <input type="hidden" name="return_paket_id" value="<?= (int)$paketId ?>" />
+              <input type="hidden" name="q" value="<?= h((string)($_GET['q'] ?? '')) ?>" />
+              <select class="input" name="paket_id" required style="width:210px">
+                <option value="">Pindahkan ke...</option>
+                <option value="0">Tanpa Paket</option>
+                <?php foreach ($paketRows as $p): ?>
+                  <?php if ((int)$p['id'] === (int)$paketId) continue; ?>
+                  <option value="<?= (int)$p['id'] ?>"><?= h((string)$p['nama']) ?><?= $p['kode'] ? ' • ' . h((string)$p['kode']) : '' ?></option>
+                <?php endforeach; ?>
+              </select>
+              <button class="btn" type="submit" onclick="return confirm('Pindahkan jamaah ini?');">Pindah</button>
+            </form>
+          </td>
         </tr>
       <?php endforeach; ?>
     </tbody>

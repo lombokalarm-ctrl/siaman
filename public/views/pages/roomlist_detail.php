@@ -63,18 +63,35 @@ try {
     $rooms = [];
 }
 
+$tab = (string)($_GET['tab'] ?? 'rooms');
+if (!in_array($tab, ['rooms', 'setup'], true)) {
+    $tab = 'rooms';
+}
+
 ?>
-<section class="split">
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Roomlist</div>
-        <div class="card-subtitle">Paket: <?= h($paketNama) ?></div>
-      </div>
+<section class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Roomlist</div>
+      <div class="card-subtitle">Paket: <?= h($paketNama) ?> • Hotel: <?= h((string)$roomlist['hotel_nama']) ?></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
       <a class="btn" href="<?= h(app_url('/?page=roomlist&paket_id=' . $paketId)) ?>">Kembali</a>
     </div>
+  </div>
 
-    <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id)) ?>">
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a class="btn <?= $tab === 'rooms' ? 'primary' : '' ?>" href="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id . '&tab=rooms')) ?>">Penempatan</a>
+    <a class="btn <?= $tab === 'setup' ? 'primary' : '' ?>" href="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id . '&tab=setup')) ?>">Setup</a>
+    <?php if ($tab === 'rooms' && $rooms): ?>
+      <a class="btn" href="<?= h(app_url('/?page=roomlist_cards_print&id=' . (int)$id)) ?>" target="_blank" rel="noopener">Cetak Flashcard</a>
+    <?php endif; ?>
+  </div>
+
+  <div class="hr"></div>
+
+  <?php if ($tab === 'setup'): ?>
+    <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id . '&tab=setup')) ?>">
       <?= csrf_input() ?>
       <input type="hidden" name="_action" value="roomlist.update" />
       <input type="hidden" name="id" value="<?= (int)$id ?>" />
@@ -112,7 +129,7 @@ try {
 
     <div class="hr"></div>
 
-    <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id)) ?>" onsubmit="return confirm('Generate template akan RESET semua kamar dan penghuni. Lanjutkan?');">
+    <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id . '&tab=setup')) ?>" onsubmit="return confirm('Generate template akan RESET semua kamar dan penghuni. Lanjutkan?');">
       <?= csrf_input() ?>
       <input type="hidden" name="_action" value="roomlist.generate" />
       <input type="hidden" name="id" value="<?= (int)$id ?>" />
@@ -122,7 +139,7 @@ try {
     <div class="hr"></div>
 
     <div class="card-title">Tambah Kamar Manual</div>
-    <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id)) ?>" style="display:flex;gap:8px;align-items:end;margin-top:10px">
+    <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id . '&tab=setup')) ?>" style="display:flex;gap:8px;align-items:end;margin-top:10px;flex-wrap:wrap">
       <?= csrf_input() ?>
       <input type="hidden" name="_action" value="room.create" />
       <input type="hidden" name="roomlist_id" value="<?= (int)$id ?>" />
@@ -145,20 +162,12 @@ try {
       </div>
       <button class="btn" type="submit">Tambah Kamar</button>
     </form>
-  </div>
-
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Kamar</div>
-        <div class="card-subtitle">Kode: R001-QD, R002-QT, dst.</div>
-      </div>
-    </div>
-
+  <?php else: ?>
     <?php if (!$rooms): ?>
-      <div class="muted">Belum ada kamar. Klik Generate Template atau tambah kamar manual.</div>
+      <div class="muted">Belum ada kamar. Buka tab Setup lalu Generate Template atau tambah kamar manual.</div>
     <?php else: ?>
-      <div class="grid cols-2" style="margin-top:10px">
+      <div class="muted">Jumlah jamaah belum ditempatkan: <span class="mono"><?= (int)count($unassigned) ?></span></div>
+      <div style="margin-top:10px;display:grid;gap:12px;grid-template-columns:repeat(3,minmax(320px,1fr));align-items:start">
         <?php foreach ($rooms as $r): ?>
           <?php
             $members = (array)($r['members'] ?? []);
@@ -166,20 +175,20 @@ try {
             $gender = (string)$r['room_gender'];
             $genderLabel = $gender === 'male' ? 'Laki-laki' : ($gender === 'female' ? 'Perempuan' : 'Mix');
           ?>
-          <div class="card" style="box-shadow:none">
+          <div class="card" style="box-shadow:none;min-width:0">
             <div class="card-header" style="padding:0 0 10px 0">
-              <div>
+              <div style="min-width:0">
                 <div class="card-title"><?= h((string)$r['room_code']) ?> <span class="sub">• <?= h($genderLabel) ?> • <?= (int)$cap ?> pax</span></div>
                 <div class="card-subtitle"><?= h((string)$roomlist['hotel_nama']) ?></div>
               </div>
             </div>
 
-            <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id)) ?>" style="display:flex;gap:8px;align-items:end">
+            <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id . '&tab=rooms')) ?>" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
               <?= csrf_input() ?>
               <input type="hidden" name="_action" value="room.key.update" />
               <input type="hidden" name="room_id" value="<?= (int)$r['id'] ?>" />
               <input type="hidden" name="roomlist_id" value="<?= (int)$id ?>" />
-              <div class="field" style="flex:1">
+              <div class="field" style="flex:1;min-width:200px">
                 <div class="label">Nomor Kunci</div>
                 <input class="input mono" name="nomor_kunci" value="<?= h((string)($r['nomor_kunci'] ?? '')) ?>" placeholder="mis. 1203" />
               </div>
@@ -189,8 +198,8 @@ try {
             <div class="hr"></div>
 
             <div class="card-title">Penghuni</div>
-            <div style="margin-top:10px">
-              <table class="table">
+            <div style="margin-top:10px;overflow-x:auto">
+              <table class="table" style="min-width:360px">
                 <thead>
                   <tr>
                     <th style="width:60px">Slot</th>
@@ -209,7 +218,7 @@ try {
                       <td class="mono"><?= (int)$m['position'] ?></td>
                       <td><?= h((string)$m['nama_lengkap']) ?></td>
                       <td style="text-align:right">
-                        <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id)) ?>" style="display:inline" onsubmit="return confirm('Hapus penghuni dari kamar ini?');">
+                        <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id . '&tab=rooms')) ?>" style="display:inline" onsubmit="return confirm('Hapus penghuni dari kamar ini?');">
                           <?= csrf_input() ?>
                           <input type="hidden" name="_action" value="room.member.remove" />
                           <input type="hidden" name="id" value="<?= (int)$m['id'] ?>" />
@@ -224,12 +233,12 @@ try {
             </div>
 
             <div style="margin-top:10px">
-              <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id)) ?>" style="display:flex;gap:8px;align-items:end">
+              <form method="post" action="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$id . '&tab=rooms')) ?>" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
                 <?= csrf_input() ?>
                 <input type="hidden" name="_action" value="room.member.add" />
                 <input type="hidden" name="room_id" value="<?= (int)$r['id'] ?>" />
                 <input type="hidden" name="roomlist_id" value="<?= (int)$id ?>" />
-                <div class="field" style="flex:1">
+                <div class="field" style="flex:1;min-width:240px">
                   <div class="label">Tambah Jamaah</div>
                   <select class="input" name="jamaah_id" required>
                     <option value="">Pilih jamaah...</option>
@@ -255,5 +264,5 @@ try {
         <?php endforeach; ?>
       </div>
     <?php endif; ?>
-  </div>
+  <?php endif; ?>
 </section>

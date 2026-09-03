@@ -31,6 +31,7 @@ $pages = [
     'manifest_csv' => ['title' => 'Manifest CSV', 'view' => __DIR__ . '/views/pages/manifest_csv.php'],
     'roomlist' => ['title' => 'Roomlist', 'view' => __DIR__ . '/views/pages/roomlist.php'],
     'roomlist_detail' => ['title' => 'Roomlist', 'view' => __DIR__ . '/views/pages/roomlist_detail.php'],
+    'roomlist_cards_print' => ['title' => 'Roomlist Flashcard', 'view' => __DIR__ . '/views/pages/roomlist_cards_print.php'],
     'login' => ['title' => 'Login', 'view' => __DIR__ . '/views/pages/login.php'],
     'clients' => ['title' => 'Klien', 'view' => __DIR__ . '/views/pages/client_list.php'],
     'client_create' => ['title' => 'Tambah Klien', 'view' => __DIR__ . '/views/pages/client_form.php'],
@@ -101,7 +102,7 @@ if (!auth_can_access_page($pageKey)) {
     exit;
 }
 
-$printPages = ['invoice_print' => true, 'kuitansi_print' => true, 'invoice_pdf' => true, 'kuitansi_pdf' => true, 'manifest_pdf' => true, 'manifest_csv' => true];
+$printPages = ['invoice_print' => true, 'kuitansi_print' => true, 'invoice_pdf' => true, 'kuitansi_pdf' => true, 'manifest_pdf' => true, 'manifest_csv' => true, 'roomlist_cards_print' => true];
 if (isset($printPages[$pageKey])) {
     require $pages[$pageKey]['view'];
     exit;

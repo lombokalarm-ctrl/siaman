@@ -164,6 +164,21 @@ function jamaah_roomlist_candidates_by_paket(int $paketId): array
     return $stmt->fetchAll();
 }
 
+function jamaah_set_paket(int $id, ?int $paketId): void
+{
+    if ($id <= 0) {
+        throw new RuntimeException('ID jamaah tidak valid.');
+    }
+    if ($paketId !== null && $paketId <= 0) {
+        $paketId = null;
+    }
+    $stmt = db()->prepare('UPDATE jamaah SET paket_id = :paket_id, updated_at = CURRENT_TIMESTAMP WHERE id = :id LIMIT 1');
+    $stmt->execute([
+        'id' => $id,
+        'paket_id' => $paketId,
+    ]);
+}
+
 function jamaah_update(int $id, array $data): void
 {
     $stmt = db()->prepare('

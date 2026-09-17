@@ -86,6 +86,14 @@ if ($paketId > 0) {
               <td><?= h((string)$rl['hotel_nama']) ?></td>
               <td style="display:flex;gap:8px;justify-content:flex-end">
                 <a class="btn" href="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$rl['id'])) ?>">Kelola</a>
+                <a class="btn" href="<?= h(app_url('/?page=roomlist_detail&id=' . (int)$rl['id'] . '&tab=setup')) ?>">Edit</a>
+                <form method="post" action="<?= h(app_url('/?page=roomlist&paket_id=' . $paketId)) ?>" onsubmit="return confirm('Hapus hotel ini dari roomlist? Semua kamar & penghuni di hotel ini akan ikut terhapus.');">
+                  <?= csrf_input() ?>
+                  <input type="hidden" name="_action" value="roomlist.delete" />
+                  <input type="hidden" name="id" value="<?= (int)$rl['id'] ?>" />
+                  <input type="hidden" name="paket_id" value="<?= (int)$paketId ?>" />
+                  <button class="btn danger" type="submit">Hapus</button>
+                </form>
               </td>
             </tr>
           <?php endforeach; ?>

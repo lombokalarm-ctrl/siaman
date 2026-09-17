@@ -1303,6 +1303,8 @@ if ($action === 'roomlist.update') {
 
     $id = (int)($_POST['id'] ?? 0);
     $hotelNama = trim((string)($_POST['hotel_nama'] ?? ''));
+    $paketId = (int)($_POST['paket_id'] ?? 0);
+    $redirectPage = (string)($_POST['redirect_page'] ?? '');
     if ($id <= 0) {
         flash_set('error', 'ID tidak valid.');
         redirect(app_url('/?page=roomlist'));
@@ -1314,7 +1316,32 @@ if ($action === 'roomlist.update') {
         redirect(app_url('/?page=roomlist_detail&id=' . $id));
     }
     flash_set('success', 'Roomlist berhasil diupdate.');
+    if ($redirectPage === 'roomlist' && $paketId > 0) {
+        redirect(app_url('/?page=roomlist&paket_id=' . $paketId));
+    }
     redirect(app_url('/?page=roomlist_detail&id=' . $id));
+}
+
+if ($action === 'roomlist.delete') {
+    csrf_verify_or_abort();
+    auth_require_admin_or_staff();
+
+    $id = (int)($_POST['id'] ?? 0);
+    $paketId = (int)($_POST['paket_id'] ?? 0);
+    if ($id <= 0 || $paketId <= 0) {
+        flash_set('error', 'Data tidak valid.');
+        redirect(app_url('/?page=roomlist'));
+    }
+
+    try {
+        roomlist_delete($id);
+    } catch (Throwable $e) {
+        flash_set('error', $e instanceof RuntimeException ? $e->getMessage() : 'Gagal menghapus roomlist.');
+        redirect(app_url('/?page=roomlist&paket_id=' . $paketId));
+    }
+
+    flash_set('success', 'Hotel berhasil dihapus dari roomlist.');
+    redirect(app_url('/?page=roomlist&paket_id=' . $paketId));
 }
 
 if ($action === 'roomlist.generate') {

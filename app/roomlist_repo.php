@@ -47,6 +47,18 @@ function roomlist_update(int $id, string $hotelNama): void
     $stmt->execute(['hotel_nama' => $hotelNama, 'id' => $id]);
 }
 
+function roomlist_delete(int $id): void
+{
+    if ($id <= 0) {
+        throw new RuntimeException('ID tidak valid.');
+    }
+    $stmt = db()->prepare('DELETE FROM roomlists WHERE id = :id LIMIT 1');
+    $stmt->execute(['id' => $id]);
+    if ($stmt->rowCount() < 1) {
+        throw new RuntimeException('Roomlist tidak ditemukan.');
+    }
+}
+
 function rooms_by_roomlist(int $roomlistId): array
 {
     if ($roomlistId <= 0) {

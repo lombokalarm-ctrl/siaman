@@ -229,15 +229,16 @@ if (!in_array($tab, ['rooms', 'setup'], true)) {
       <div class="muted">Belum ada kamar. Buka tab Setup lalu Generate Template atau tambah kamar manual.</div>
     <?php else: ?>
       <div class="muted">Jumlah jamaah belum ditempatkan: <span class="mono"><?= (int)count($unassigned) ?></span></div>
-      <div style="margin-top:10px;display:grid;gap:12px;grid-template-columns:repeat(3,minmax(320px,1fr));align-items:start">
+      <div class="roomlist-board" style="margin-top:10px;display:grid;gap:12px;grid-template-columns:repeat(3,minmax(320px,1fr));align-items:start">
         <?php foreach ($rooms as $r): ?>
           <?php
             $members = (array)($r['members'] ?? []);
             $cap = (int)$r['capacity'];
             $gender = (string)$r['room_gender'];
             $genderLabel = $gender === 'male' ? 'Laki-laki' : ($gender === 'female' ? 'Perempuan' : 'Mix');
+            $roomClass = $gender === 'male' ? 'room-card--male' : ($gender === 'female' ? 'room-card--female' : 'room-card--mix');
           ?>
-          <div class="card" style="box-shadow:none;min-width:0">
+          <div class="card room-card <?= h($roomClass) ?>" data-room-gender="<?= h($gender) ?>" style="box-shadow:none;min-width:0">
             <div class="card-header" style="padding:0 0 10px 0">
               <div style="min-width:0">
                 <div class="card-title"><?= h((string)$r['room_code']) ?> <span class="sub">• <?= h($genderLabel) ?> • <?= (int)$cap ?> pax</span></div>
